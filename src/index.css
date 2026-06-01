@@ -1,0 +1,107 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Mono', monospace;
+  background: #080d16;
+  color: #e2e8f0;
+  min-height: 100vh;
+}
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: #080d16; }
+::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+
+/* NAV */
+.rr-nav { border-bottom: 1px solid #1a2235; padding: 0 20px; display: flex; align-items: center; gap: 8px; height: 52px; position: sticky; top: 0; background: #080d16; z-index: 50; }
+.rr-nav-logo { font-family: 'Syne', sans-serif; font-size: 17px; font-weight: 800; color: #fff; margin-right: 16px; letter-spacing: -0.01em; }
+.rr-nav-logo span { color: #e11d48; }
+.rr-nav-role { color: #334155; font-size: 11px; font-weight: 400; font-family: 'DM Mono'; }
+.rr-nav-btn { background: none; border: none; cursor: pointer; padding: 7px 13px; border-radius: 6px; font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.04em; transition: all 0.12s; color: #64748b; }
+.rr-nav-btn:hover { color: #e2e8f0; }
+.rr-nav-btn.active { color: #fff; background: #1e293b; }
+.rr-nav-spacer { flex: 1; }
+
+/* CONTENT */
+.rr-content { max-width: 1000px; margin: 0 auto; padding: 28px 16px; }
+
+/* BUTTONS */
+.btn-primary { background: #e11d48; color: #fff; border: none; cursor: pointer; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 13px; padding: 10px 18px; font-weight: 500; letter-spacing: 0.03em; transition: all 0.12s; }
+.btn-primary:hover { background: #be123c; transform: translateY(-1px); }
+.btn-ghost { background: transparent; border: 1px solid #1e293b; color: #94a3b8; cursor: pointer; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 12px; padding: 8px 14px; transition: all 0.12s; }
+.btn-ghost:hover { border-color: #334155; color: #e2e8f0; }
+.btn-danger { background: transparent; border: 1px solid #e11d4833; color: #e11d48; cursor: pointer; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 12px; padding: 8px 14px; transition: all 0.12s; }
+.btn-danger:hover { background: #e11d4811; }
+
+/* CARDS */
+.card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; }
+.card-hover { transition: all 0.12s; cursor: pointer; }
+.card-hover:hover { border-color: #334155; background: #141d2e; transform: translateY(-1px); }
+
+/* INPUTS */
+.input { background: #0a0f1a; border: 1px solid #1e293b; color: #e2e8f0; border-radius: 8px; padding: 9px 12px; font-family: 'DM Mono', monospace; font-size: 13px; width: 100%; outline: none; transition: border 0.12s; }
+.input:focus { border-color: #e11d48; }
+textarea.input { resize: vertical; min-height: 56px; }
+select.input option { background: #111827; }
+
+/* TAGS */
+.tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; background: #1e293b; color: #94a3b8; }
+
+/* DAY CELL */
+.day-cell { background: #111827; border: 1px solid #1e293b; border-radius: 10px; padding: 12px 10px; transition: all 0.12s; min-height: 90px; cursor: pointer; }
+.day-cell:hover { border-color: #334155; background: #141d2e; }
+
+/* OVERLAY / MODAL */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.82); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+.modal { background: #111827; border: 1px solid #1e293b; border-radius: 16px; padding: 24px; width: 100%; }
+.modal-scroll { max-height: 85vh; overflow-y: auto; padding-right: 4px; }
+.modal-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; margin-bottom: 18px; }
+
+/* STATS */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 24px; }
+.stat-val { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #fff; }
+.stat-label { font-size: 10px; color: #64748b; margin-top: 3px; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* AVATAR */
+.avatar { width: 34px; height: 34px; border-radius: 7px; background: #1e293b; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; letter-spacing: 0.05em; }
+
+/* PAGE HEADER */
+.page-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.page-sub { font-size: 12px; color: #64748b; margin-top: 3px; }
+
+/* TOAST */
+.toast { position: fixed; bottom: 20px; right: 20px; background: #4ade80; color: #0a0f1a; padding: 10px 18px; border-radius: 8px; font-size: 13px; font-weight: 600; z-index: 200; animation: slideup 0.2s ease; }
+.toast.err { background: #e11d48; color: #fff; }
+@keyframes slideup { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* CHAT BUBBLE */
+.bubble-coach { background: #1e3a5f; border-radius: 12px 12px 2px 12px; }
+.bubble-athlete { background: #1e293b; border-radius: 12px 12px 12px 2px; }
+
+/* RPE BUTTONS */
+.rpe-btn { width: 42px; height: 42px; border-radius: 8px; border: 2px solid #1e293b; background: transparent; font-family: 'DM Mono'; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.12s; color: #64748b; }
+.rpe-btn.active { border-color: currentColor; background: color-mix(in srgb, currentColor 20%, transparent); color: inherit; }
+
+/* NOTIF DOT */
+.notif-dot { width: 7px; height: 7px; border-radius: 50%; background: #e11d48; display: inline-block; }
+
+/* WEEK STRIP */
+.week-strip { display: flex; gap: 4px; margin-top: 10px; }
+.week-strip-bar { flex: 1; height: 4px; border-radius: 2px; }
+
+/* FORM GROUP */
+.fg { display: flex; flex-direction: column; gap: 6px; }
+.fg-label { font-size: 10px; color: #64748b; letter-spacing: 0.08em; }
+
+/* ZONE ROW */
+.zone-row { display: flex; gap: 12px; align-items: center; padding: 11px 13px; margin-bottom: 5px; background: #111827; border-radius: 8px; }
+
+/* RESPONSIVE */
+@media (max-width: 640px) {
+  .rr-content { padding: 16px 12px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .week-grid { grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .rr-nav { padding: 0 12px; gap: 4px; }
+  .rr-nav-btn { padding: 6px 8px; font-size: 11px; }
+}
