@@ -19,14 +19,25 @@ export const SESSION_TYPES = [
   { id:"EF",     label:"Endurance Fondamentale", color:"#6b7280" },
   { id:"SEUIL",  label:"Seuil / Tempo",           color:"#fde047" },
   { id:"VMA",    label:"VMA / Intervalles",        color:"#f43f5e" },
+  { id:"FARTLEK",label:"Fartlek",                  color:"#a78bfa" },
   { id:"COTES",  label:"Côtes / PPG",              color:"#f97316" },
   { id:"SORTIE", label:"Sortie Longue",            color:"#818cf8" },
-  { id:"RECUP",  label:"Récupération",             color:"#94a3b8" },
+  { id:"PISTE",  label:"Piste",                    color:"#22d3ee" },
+  { id:"RECUP",  label:"Récupération Active",      color:"#94a3b8" },
   { id:"REPOS",  label:"Repos",                    color:"#1e293b" },
   { id:"COMP",   label:"Compétition",              color:"#fbbf24" },
+  { id:"CROSS",  label:"Cross / Trail",            color:"#84cc16" },
+  { id:"RENFO",  label:"Renforcement",             color:"#fb923c" },
 ]
 
 export const DAYS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"]
 
 export const RPE_LABELS = ["","Très facile","Facile","Modéré","Modéré+","Difficile","Difficile+","Dur","Très dur","Extrême","Max"]
 export const RPE_COLORS = ["","#4ade80","#86efac","#fde047","#fb923c","#f97316","#ef4444","#dc2626","#b91c1c","#991b1b","#7f1d1d"]
+
+export const RECORD_DISTANCES = [
+  "800m", "1000m", "1500m", "1 mile", "3000m", "5km", "10km", "Semi-marathon", "Marathon", "50km", "100km"
+]
+
+export const STRAVA_CLIENT_ID = "254589"
+export const STRAVA_REDIRECT_URI = "https://rawrun-coaching.vercel.app/strava-callback"

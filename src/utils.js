@@ -19,6 +19,39 @@ export function parsePace(str) {
   return m * 60 + (s || 0)
 }
 
+// Calculate zones from multiple records
+// Uses the best predictor (most reliable distance for the athlete profile)
+export function calculateZonesFromRecords(records) {
+  if (!records || records.length === 0) return BASE_ZONES.map(z => ({ ...z, paceMin: '—', paceMax: '—' }))
+
+  // Priority: 10km > 5km > semi > others
+  const priority = ['10km', '5km', 'Semi-marathon', 'Marathon', '3000m', '1500m', '800m']
+  let bestRecord = null
+  let bestDist = null
+
+  for (const dist of priority) {
+    const r = records.find(r => r.distance === dist)
+    if (r) { bestRecord = r; bestDist = dist; break }
+  }
+
+  if (!bestRecord) bestRecord = records[0]
+
+  // Convert to 5km equivalent pace
+  const distMap = { '800m': 0.8, '1000m': 1, '1500m': 1.5, '1 mile': 1.609, '3000m': 3, '5km': 5, '10km': 10, 'Semi-marathon': 21.097, 'Marathon': 42.195, '50km': 50, '100km': 100 }
+  const km = distMap[bestRecord.distance] || 5
+  const secs = time5kToSecs(bestRecord.time)
+  const pacePerKm = secs / km
+
+  // Normalize to seuil reference
+  const refSeuil = pacePerKm * 1.05
+
+  return BASE_ZONES.map(z => ({
+    ...z,
+    paceMin: secsToPace(Math.round(refSeuil * z.refFactor * 1.03)),
+    paceMax: secsToPace(Math.round(refSeuil * z.refFactor * 0.97)),
+  }))
+}
+
 export function calculateZones(perf, dist = 5) {
   const total = time5kToSecs(perf)
   if (!total) return BASE_ZONES.map(z => ({ ...z, paceMin: '—', paceMax: '—' }))
@@ -39,24 +72,47 @@ export function getWeekKey(offset = 0) {
   return s.toISOString().slice(0, 10)
 }
 
-export function generateTCX(name, steps) {
+export function generateTCX(name, blocks, zones) {
+  const steps = []
+  blocks?.forEach(b => {
+    if (b.isLoop && b.loopBlocks) {
+      // Add repeated steps
+      for (let r = 0; r < (b.loopReps || 1); r++) {
+        b.loopBlocks.forEach(lb => steps.push(lb))
+      }
+    } else {
+      steps.push(b)
+    }
+  })
+
   const lines = [
     `<?xml version="1.0" encoding="UTF-8"?>`,
     `<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">`,
     `<Workouts><Workout Sport="Running"><Name>${name}</Name>`,
     `<Step xsi:type="Repeat_t"><StepId>1</StepId><Repetitions>1</Repetitions>`,
   ]
+
   steps.forEach((s, i) => {
-    lines.push(`<Child xsi:type="Step_t"><StepId>${i + 2}</StepId><Name>${s.name || 'Bloc'}</Name>`)
-    if (s.durationType === 'time') lines.push(`<Duration xsi:type="Time_t"><Seconds>${s.duration}</Seconds></Duration>`)
-    else lines.push(`<Duration xsi:type="Distance_t"><Meters>${s.distance}</Meters></Duration>`)
-    const pm = parsePace(s.paceMin), px = parsePace(s.paceMax)
+    const z = zones[s.zone - 1]
+    const durationSecs = s.durationType === 'time'
+      ? (s.timeUnit === 'min' ? s.duration * 60 : s.timeUnit === 'h' ? s.duration * 3600 : s.duration)
+      : null
+    const distMeters = s.durationType === 'distance'
+      ? (s.distUnit === 'km' ? s.distance * 1000 : s.distance)
+      : null
+
+    lines.push(`<Child xsi:type="Step_t"><StepId>${i + 2}</StepId><Name>${s.name || `Z${s.zone}`}</Name>`)
+    if (durationSecs) lines.push(`<Duration xsi:type="Time_t"><Seconds>${durationSecs}</Seconds></Duration>`)
+    else if (distMeters) lines.push(`<Duration xsi:type="Distance_t"><Meters>${distMeters}</Meters></Duration>`)
+
+    const pm = parsePace(z?.paceMin), px = parsePace(z?.paceMax)
     if (pm > 0 && px > 0) {
       const lo = (1000 / pm).toFixed(3), hi = (1000 / px).toFixed(3)
       lines.push(`<Target xsi:type="Speed_t"><SpeedZone xsi:type="CustomSpeedZone_t"><LowInMetersPerSecond>${lo}</LowInMetersPerSecond><HighInMetersPerSecond>${hi}</HighInMetersPerSecond></SpeedZone></Target>`)
     }
     lines.push(`</Child>`)
   })
+
   lines.push(`</Step></Workout></Workouts></TrainingCenterDatabase>`)
   return lines.join('\n')
 }
@@ -73,6 +129,19 @@ export function formatTime(ts) {
   return new Date(ts).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 }
 
-export function formatDate(ts) {
-  return new Date(ts).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+export function daysUntil(dateStr) {
+  const diff = new Date(dateStr) - new Date()
+  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+}
+
+export function getStravaAuthUrl(athleteId) {
+  const params = new URLSearchParams({
+    client_id: '254589',
+    redirect_uri: 'https://rawrun-coaching.vercel.app',
+    response_type: 'code',
+    approval_prompt: 'auto',
+    scope: 'activity:read_all',
+    state: athleteId,
+  })
+  return `https://www.strava.com/oauth/authorize?${params}`
 }
