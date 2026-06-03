@@ -1,3 +1,5 @@
+import { WellnessCheckIn } from './WellnessCheck'
+import { StrengthSessionView } from './StrengthBuilder'
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { calculateZonesFromRecords, calculateZones, getWeekKey, generateTCX, downloadTCX, daysUntil, getStravaAuthUrl } from '../utils'
