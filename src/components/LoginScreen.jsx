@@ -68,13 +68,13 @@ export default function LoginScreen({ onLogin }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 20, background: '#080d16' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Syne:wght@700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');;
         * { box-sizing: border-box; }
-        .login-input { background: #0a0f1a; border: 1px solid #1e293b; color: #e2e8f0; border-radius: 8px; padding: 10px 14px; font-family: 'DM Mono', monospace; font-size: 13px; width: 100%; outline: none; transition: border 0.12s; }
+        .login-input { background: #0a0f1a; border: 1px solid #1e293b; color: #e2e8f0; border-radius: 8px; padding: 10px 14px; font-family: 'Space Mono', monospace; font-size: 13px; width: 100%; outline: none; transition: border 0.12s; }
         .login-input:focus { border-color: #e11d48; }
-        .btn-red { background: #e11d48; color: #fff; border: none; cursor: pointer; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 13px; padding: 11px 20px; font-weight: 500; transition: all 0.12s; width: 100%; }
+        .btn-red { background: #e11d48; color: #fff; border: none; cursor: pointer; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 13px; padding: 11px 20px; font-weight: 500; transition: all 0.12s; width: 100%; }
         .btn-red:hover { background: #be123c; }
-        .btn-outline { background: transparent; border: 1px solid #1e293b; color: #94a3b8; cursor: pointer; border-radius: 8px; font-family: 'DM Mono', monospace; font-size: 12px; padding: 9px 16px; transition: all 0.12s; }
+        .btn-outline { background: transparent; border: 1px solid #1e293b; color: #94a3b8; cursor: pointer; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 12px; padding: 9px 16px; transition: all 0.12s; }
         .btn-outline:hover { border-color: #334155; color: #e2e8f0; }
         .coach-card { background: #111827; border: 2px solid #1e293b; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.15s; text-align: center; }
         .coach-card:hover { border-color: #e11d48; transform: translateY(-2px); }
@@ -83,8 +83,8 @@ export default function LoginScreen({ onLogin }) {
 
       {/* Logo */}
       <div style={{ marginBottom: 6 }}>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 52, fontWeight: 800, letterSpacing: '-0.04em', color: '#fff' }}>RAW</span>
-        <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 52, fontWeight: 800, letterSpacing: '-0.04em', color: '#e11d48' }}>RUN</span>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 52, fontWeight: 800, letterSpacing: '-0.04em', color: '#fff' }}>RAW</span>
+        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 52, fontWeight: 800, letterSpacing: '-0.04em', color: '#e11d48' }}>RUN</span>
       </div>
       <div style={{ fontSize: 11, color: '#475569', letterSpacing: '0.18em', marginBottom: 40 }}>COACHING PLATFORM</div>
 
@@ -92,7 +92,7 @@ export default function LoginScreen({ onLogin }) {
       {showCoachLogin && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }}>
           <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: 16, padding: 28, width: '100%', maxWidth: 360 }}>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 16 }}>Accès Coach</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 16 }}>Accès Coach</div>
             <input className="login-input" type="password" placeholder="Code coach" value={coachCode} onChange={e => setCoachCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCoachLogin()} style={{ marginBottom: 10 }} autoFocus />
             {error && <div style={{ color: '#e11d48', fontSize: 12, marginBottom: 10 }}>{error}</div>}
             <div style={{ display: 'flex', gap: 10 }}>
@@ -108,10 +108,10 @@ export default function LoginScreen({ onLogin }) {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#0a0f1a', borderRadius: 8, padding: 4 }}>
-          <button onClick={() => { setMode('login'); setError('') }} style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'DM Mono'", fontSize: 12, background: mode === 'login' ? '#1e293b' : 'transparent', color: mode === 'login' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
+          <button onClick={() => { setMode('login'); setError('') }} style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'Space Mono'", fontSize: 12, background: mode === 'login' ? '#1e293b' : 'transparent', color: mode === 'login' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
             Connexion
           </button>
-          <button onClick={() => { setMode('register'); setRegStep(1); setError('') }} style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'DM Mono'", fontSize: 12, background: mode === 'register' ? '#1e293b' : 'transparent', color: mode === 'register' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
+          <button onClick={() => { setMode('register'); setRegStep(1); setError('') }} style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'Space Mono'", fontSize: 12, background: mode === 'register' ? '#1e293b' : 'transparent', color: mode === 'register' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
             Créer un compte
           </button>
         </div>
@@ -130,13 +130,13 @@ export default function LoginScreen({ onLogin }) {
 
         {mode === 'register' && regStep === 1 && (
           <div>
-            <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Choisis ton coach</div>
+            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Choisis ton coach</div>
             <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>Il suivra ton entraînement et programmera tes séances.</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
               {COACHES.map(c => (
                 <div key={c.id} className={`coach-card ${selectedCoach?.id === c.id ? 'selected' : ''}`} onClick={() => setSelectedCoach(c)}>
                   <div style={{ fontSize: 40, marginBottom: 10 }}>{c.emoji}</div>
-                  <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{c.name}</div>
+                  <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{c.name}</div>
                   <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{c.desc}</div>
                   {selectedCoach?.id === c.id && <div style={{ marginTop: 10, fontSize: 11, color: '#e11d48', fontWeight: 600 }}>✓ Sélectionné</div>}
                 </div>
@@ -170,7 +170,7 @@ export default function LoginScreen({ onLogin }) {
       {/* Coach access - discreet button at bottom */}
       <div style={{ position: 'fixed', bottom: 16, right: 16 }}>
         <button onClick={() => { setShowCoachLogin(true); setError('') }}
-          style={{ background: 'none', border: 'none', color: '#1e293b', cursor: 'pointer', fontSize: 10, fontFamily: "'DM Mono'", letterSpacing: '0.05em' }}>
+          style={{ background: 'none', border: 'none', color: '#1e293b', cursor: 'pointer', fontSize: 10, fontFamily: "'Space Mono'", letterSpacing: '0.05em' }}>
           ···
         </button>
       </div>

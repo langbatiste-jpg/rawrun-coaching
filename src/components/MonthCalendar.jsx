@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { SESSION_TYPE_OPTIONS } from '../constants'
+
 
 const SESSION_TYPES = [
   { id: 'EF', label: 'EF', color: '#6b7280' },
