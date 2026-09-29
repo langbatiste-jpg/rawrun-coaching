@@ -3,7 +3,7 @@ import LoginPanel from './LoginPanel'
 import { CoachingOffers, Boutique, OrderBanner } from './Shop'
 import Wordmark from './Wordmark'
 import { BRAND } from '../../shared/brand.js'
-import { athleteZones, secsToPace, timeToSecs } from '../../shared/training.js'
+import { athleteZones, secsToPace } from '../../shared/training.js'
 import './landing.css'
 
 // Page d'accueil publique : chaque section « épinglée » avance avec le défilement.
@@ -50,6 +50,23 @@ const SESSION = [
   { w: 10, h: 18, c: '#71717a', label: 'cool' },
 ]
 
+// Les 14 zones regroupées en 5 familles faciles à comprendre
+const FAMILIES = [
+  { name: 'Facile', zones: [1, 2], easy: true, color: '#a1a1aa', why: "L'essentiel de ta semaine. Construit ton moteur sans fatigue : tu dois pouvoir parler." },
+  { name: 'Endurance active', zones: [3, 4], color: '#38bdf8', why: 'Un cran au-dessus : tu apprends à tenir longtemps à bonne vitesse.' },
+  { name: 'Allure course', zones: [5, 6, 7], color: '#c8ff2e', why: "L'allure de ton objectif (marathon, semi), répétée jusqu'à ce qu'elle te semble facile." },
+  { name: 'Seuil', zones: [8, 9], color: '#fbbf24', why: 'Repousse le moment où les jambes brûlent. Le moteur du 10 km.' },
+  { name: 'Vitesse', zones: [10, 11, 12, 13, 14], color: '#ff5a1f', why: 'Courtes et rapides : ton allure course devient confortable.' },
+]
+
+const VERSUS = [
+  ['Ton plan', 'Généré à partir de 3 questions, le même que pour des milliers de coureurs', 'Construit sur tes chronos, ton historique et ton emploi du temps'],
+  ['Mauvaise nuit, grosse semaine au boulot', "Ne le sait pas, la séance reste la même", 'Lit ton ressenti après chaque séance et ajuste la semaine'],
+  ['Une douleur qui arrive', 'Continue comme si de rien n\'était', 'Repère le signal au check-in et adapte avant la blessure'],
+  ['Tes questions', 'Une FAQ', 'Un vrai échange : chat, appels, stratégie de course'],
+  ['La motivation', 'Des notifications que tu finis par ignorer', "Quelqu'un attend ton retour de séance"],
+]
+
 export default function Landing({ onAthleteLogin, onCoachLogin, showToast }) {
   const root = useRef(null)
   const steps = useScrollScenes(root)
@@ -61,7 +78,6 @@ export default function Landing({ onAthleteLogin, onCoachLogin, showToast }) {
   const [loginSignal, setLoginSignal] = useState(null)
   const [ten, setTen] = useState(45 * 60)
   const zones = useMemo(() => athleteZones({ records: [{ distance: '10km', time: secsToPace(ten) }] }), [ten])
-  const fastest = timeToSecs(zones[13].paceMax) || 1, slowest = timeToSecs(zones[0].paceMin) || 1
   const goLogin = mode => { setLoginSignal({ mode, t: Date.now() }); document.getElementById('connexion')?.scrollIntoView({ behavior: 'smooth' }) }
 
   let x = 0
@@ -131,14 +147,14 @@ export default function Landing({ onAthleteLogin, onCoachLogin, showToast }) {
         </div>
       </section>
 
-      {/* 3 · ZONES INTERACTIVES */}
+      {/* 3 · ALLURES — expliquées simplement */}
       <section id="zones" className="l-scene l-zones" data-scene="zones" style={{ height: '200vh' }}>
         <div className="l-sticky">
           <div className="l-wrap l-zones-grid">
             <div>
-              <p className="l-kicker">Smart Pace</p>
-              <h2 className="l-h2">14 zones.<br />Calées sur tes chronos.</h2>
-              <p className="l-body">Pas de pourcentage de VMA : tes allures partent de tes vraies courses — marathon, semi, 10 km, 5 km. Essaie avec ton temps sur 10 km.</p>
+              <p className="l-kicker">Tes allures</p>
+              <h2 className="l-h2">Courir vite tout le temps ne fait pas progresser.</h2>
+              <p className="l-body">Chaque séance vise un effort précis. C'est ce qui te fait avancer sans te cramer ni te blesser. Tes allures sont calculées sur tes chronos : entre ton temps sur 10 km pour voir.</p>
               <label className="l-slider">
                 <span>Ton 10 km</span>
                 <b className="num">{secsToPace(ten).replace(/^(\d+):(\d+)$/, (m, a, b) => `${a}'${b}`)}</b>
@@ -146,18 +162,20 @@ export default function Landing({ onAthleteLogin, onCoachLogin, showToast }) {
               </label>
             </div>
             <div className="l-zone-list">
-              {zones.map((z, i) => {
-                const easy = z.id <= 2
-                const speed = (slowest / (timeToSecs(z.paceMax) || slowest))
-                const w = 28 + ((speed - 1) / ((slowest / fastest) - 1)) * 72
+              {FAMILIES.map((f, i) => {
+                const zs = zones.filter(z => f.zones.includes(z.id))
+                const fast = zs[zs.length - 1].paceMax, slow = zs[0].paceMin
                 return (
-                  <div key={z.id} className="l-zone" style={{ '--i': i }}>
-                    <span className="l-zone-id" style={{ color: z.color }}>Z{z.id}</span>
-                    <span className="l-zone-bar"><i style={{ width: `${w}%`, background: z.color }} /></span>
-                    <span className={`l-zone-pace ${easy ? 'easy' : 'num'}`}>{easy ? 'aux sensations' : `${z.paceMax}–${z.paceMin}`}</span>
+                  <div key={f.name} className="l-family" style={{ '--i': i, '--c': f.color }}>
+                    <div className="l-family-top">
+                      <b>{f.name}</b>
+                      <span className={f.easy ? 'l-zone-pace easy' : 'l-zone-pace num'}>{f.easy ? 'aux sensations' : `${fast} – ${slow} /km`}</span>
+                    </div>
+                    <div className="l-family-why">{f.why}</div>
                   </div>
                 )
               })}
+              <div className="l-family-note">En coulisse : 14 zones précises, pour que ta montre bippe à la bonne allure. Toi, tu cours.</div>
             </div>
           </div>
         </div>
@@ -177,6 +195,24 @@ export default function Landing({ onAthleteLogin, onCoachLogin, showToast }) {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* 4b · COACH VS APPLI */}
+      <section className="l-versus">
+        <div className="l-wrap">
+          <p className="l-kicker">Pourquoi un coach</p>
+          <h2 className="l-h2">Une appli te donne un plan.<br />Un coach te suit.</h2>
+          <div className="l-vs-table">
+            <div className="l-vs-head"><span /><span>Appli classique</span><span>Avec {BRAND.coach.split(' ')[0]}</span></div>
+            {VERSUS.map(([topic, app, coach], i) => (
+              <div key={i} className="l-vs-row reveal">
+                <b>{topic}</b>
+                <span className="l-vs-app">{app}</span>
+                <span className="l-vs-coach">{coach}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>

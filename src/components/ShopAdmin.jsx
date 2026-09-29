@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../supabase'
 import { Overlay, FG } from './ui'
+import { api } from '../api'
 import { euros } from './Shop'
+import DeliverySlips, { printSlips } from './DeliverySlips'
 
 const toCents = v => Math.round(Number(String(v).replace(',', '.')) * 100) || 0
 const fromCents = c => (Number(c || 0) / 100).toString().replace('.', ',')
@@ -13,6 +15,8 @@ export default function ShopAdmin({ showToast }) {
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
   const [edit, setEdit] = useState(null) // { table, row }
+  const [slips, setSlips] = useState(null)
+  const [shipping, setShipping] = useState(null) // commande en cours d'expédition
 
   const load = async () => {
     const [o, op, p, or] = await Promise.all([
@@ -34,7 +38,7 @@ export default function ShopAdmin({ showToast }) {
     if (!confirm(`Supprimer « ${row.name} » ?`)) return
     await supabase.from(table).delete().eq('id', row.id); load()
   }
-  const setStatus = async (o, status) => { await supabase.from('orders').update({ status }).eq('id', o.id); load() }
+  const setStatus = async (o, status, extra = {}) => { await supabase.from('orders').update({ status, ...extra }).eq('id', o.id); load() }
 
   const subs = orders.filter(o => o.kind === 'coaching' && o.status === 'active')
   const mrr = subs.reduce((s, o) => s + (o.items || []).filter(i => i.interval === 'month').reduce((a, i) => a + (i.price_cents || 0), 0), 0)
@@ -55,6 +59,14 @@ export default function ShopAdmin({ showToast }) {
         <div className="card"><div className="stat-val">{euros(sales)}</div><div className="stat-label">encaissé ce mois-ci</div></div>
         <div className="card"><div className="stat-val">{toShip.length}</div><div className="stat-label">commande{toShip.length > 1 ? 's' : ''} à expédier</div></div>
       </div>
+
+      {toShip.length > 0 && (
+        <div className="card" style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 16, borderColor: 'rgba(255,90,31,.45)' }}>
+          <span style={{ fontSize: 22 }}>📦</span>
+          <div style={{ flex: 1, minWidth: 200 }}><b>{toShip.length} colis à préparer</b><div className="muted" style={{ fontSize: 13 }}>Imprime les bons : liste des articles à cocher + étiquette d'adresse à découper.</div></div>
+          <button className="btn-primary" onClick={() => printSlips(setSlips, toShip)}>{toShip.length > 1 ? `Imprimer les ${toShip.length} bons de livraison` : 'Imprimer le bon de livraison'}</button>
+        </div>
+      )}
 
       <div className="tab-bar" style={{ marginBottom: 16 }}>
         {[['offers', 'Offres coaching'], ['options', 'Options'], ['products', 'Produits'], ['orders', `Commandes${toShip.length ? ` (${toShip.length})` : ''}`]].map(([k, l]) => <button key={k} className={`tab-btn ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</button>)}
@@ -91,7 +103,7 @@ export default function ShopAdmin({ showToast }) {
             <div key={o.id} className="card" style={{ borderLeft: `3px solid ${o.status === 'paid' ? 'var(--accent)' : o.status === 'active' ? 'var(--lime)' : 'var(--border-2)'}` }}>
               <div style={{ display: 'flex', gap: 12, justifyContent: 'space-between', flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontWeight: 600 }}>{o.kind === 'shop' ? '🛒' : '🏃'} {o.name || o.email} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· {new Date(o.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
+                  <div style={{ fontWeight: 600 }}>{o.kind === 'shop' ? '🛒' : '🏃'} {o.order_no && <span className="num" style={{ color: 'var(--text-3)', fontWeight: 400 }}>{o.order_no} · </span>}{o.name || o.email} <span className="muted" style={{ fontWeight: 400, fontSize: 13 }}>· {new Date(o.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</span></div>
                   <div className="muted" style={{ fontSize: 13 }}>{(o.items || []).map(i => `${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}`).join(', ')}</div>
                   <div className="muted" style={{ fontSize: 12.5 }}>{[o.email, o.phone].filter(Boolean).join(' · ')}</div>
                   {o.shipping?.address && <div style={{ fontSize: 12.5, marginTop: 4 }}>📦 {[o.shipping.name, o.shipping.address.line1, o.shipping.address.line2, `${o.shipping.address.postal_code || ''} ${o.shipping.address.city || ''}`].filter(Boolean).join(', ')}</div>}
@@ -99,7 +111,14 @@ export default function ShopAdmin({ showToast }) {
                 <div style={{ textAlign: 'right' }}>
                   <div className="num" style={{ fontSize: 17 }}>{euros(o.amount_cents)}</div>
                   <div style={{ fontSize: 12.5, color: o.status === 'active' ? 'var(--lime)' : o.status === 'paid' ? 'var(--accent)' : 'var(--text-3)' }}>{{ paid: 'Payée — à expédier', shipped: 'Expédiée', active: 'Abonnement actif', canceled: 'Abonnement arrêté' }[o.status] || o.status}</div>
-                  {o.kind === 'shop' && o.status === 'paid' && <button className="btn-ghost btn-sm" style={{ marginTop: 6 }} onClick={() => setStatus(o, 'shipped')}>Marquer expédiée</button>}
+                  {o.access_code && <div style={{ fontSize: 12.5 }}>Code envoyé : <b className="num">{o.access_code}</b></div>}
+                  {o.tracking && <div className="muted" style={{ fontSize: 12.5 }}>Suivi : {o.tracking}</div>}
+                  {o.kind === 'shop' && (
+                    <div style={{ display: 'flex', gap: 6, justifyContent: 'flex-end', marginTop: 6, flexWrap: 'wrap' }}>
+                      <button className="btn-ghost btn-sm" onClick={() => printSlips(setSlips, [o])}>🖨 Bon de livraison</button>
+                      {o.status === 'paid' && <button className="btn-primary btn-sm" onClick={() => setShipping(o)}>Marquer expédiée</button>}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -107,6 +126,8 @@ export default function ShopAdmin({ showToast }) {
         </div>
       )}
 
+      <DeliverySlips orders={slips} />
+      {shipping && <ShipModal order={shipping} onClose={() => setShipping(null)} onDone={async tracking => { await setStatus(shipping, 'shipped', { shipped_at: new Date().toISOString(), tracking: tracking || null }); try { await api('notify-shipped', { order_id: shipping.id }, { coach: true }) } catch {} setShipping(null); showToast('Commande expédiée, le client est prévenu ✓') }} />}
       {edit && <EditModal {...edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} showToast={showToast} />}
     </div>
   )
@@ -181,6 +202,22 @@ function EditModal({ table, row, onClose, onSaved, showToast }) {
           <button className="btn-ghost" onClick={onClose}>Annuler</button>
           <button className="btn-primary" onClick={save} disabled={busy}>{busy ? '…' : 'Enregistrer'}</button>
         </div>
+      </div>
+    </Overlay>
+  )
+}
+
+function ShipModal({ order, onClose, onDone }) {
+  const [tracking, setTracking] = useState('')
+  const [busy, setBusy] = useState(false)
+  return (
+    <Overlay onClose={onClose}>
+      <div className="modal-title">Colis expédié</div>
+      <p className="muted" style={{ marginBottom: 14 }}>{order.order_no} · {order.name}. Le client reçoit un e-mail « ton colis est parti ».</p>
+      <FG label="Numéro de suivi (facultatif)"><input className="input num" value={tracking} onChange={e => setTracking(e.target.value)} placeholder="6A12345678901 (La Poste / Colissimo)" autoFocus /></FG>
+      <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 16 }}>
+        <button className="btn-ghost" onClick={onClose}>Annuler</button>
+        <button className="btn-primary" disabled={busy} onClick={async () => { setBusy(true); await onDone(tracking.trim()) }}>{busy ? '…' : 'Confirmer l\'expédition'}</button>
       </div>
     </Overlay>
   )

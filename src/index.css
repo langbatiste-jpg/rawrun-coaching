@@ -296,6 +296,10 @@ textarea.input { resize: vertical; line-height: 1.5; }
   body { background: #050506 !important; padding: 0 12mm !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .rr-app, .rr-bg, .overlay, .toast { display: none !important; }
   .print-only { display: block !important; color: #f4f4f5; font-family: var(--sans); }
+  /* Bons de livraison : fond blanc pour l'imprimante */
+  html:has(body.print-light), body.print-light { background: #fff !important; }
+  body.print-light { padding: 0 !important; }
+  body.print-light .print-only { color: #111; }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -147,3 +147,36 @@
 /* Offres & boutique */
 .l-shop { padding: clamp(40px, 10vh, 110px) 0 0; }
 .l-shop:not(:has(.shop-offers, .boutique)) { display: none; }
+
+/* Familles d'allures */
+.l-family { --e: clamp(0, calc(var(--p) * 12 - var(--i) * 1.2), 1); opacity: var(--e); transform: translateX(calc((1 - var(--e)) * 60px)); padding: 12px 16px; border-radius: 14px; background: var(--glass); border: 1px solid var(--border); border-left: 3px solid var(--c); }
+.l-family-top { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; }
+.l-family-top b { font-size: 17px; color: #fff; }
+.l-family-why { color: var(--text-3); font-size: 14px; line-height: 1.45; margin-top: 3px; }
+.l-family-note { color: var(--text-3); font-size: 13px; margin-top: 6px; opacity: clamp(0, calc(var(--p) * 8 - 5), 1); }
+.l-zone-list { gap: 8px; }
+@media (max-width: 860px) {
+  .l-family { padding: 9px 12px; }
+  .l-family-top b { font-size: 15px; }
+  .l-family-why { font-size: 12.5px; }
+  .l-family-note { display: none; }
+}
+
+/* Coach vs appli */
+.l-versus { padding: clamp(80px, 16vh, 160px) 0 clamp(40px, 8vh, 80px); }
+.l-vs-table { margin-top: 12px; }
+.l-vs-head, .l-vs-row { display: grid; grid-template-columns: 1fr 1.3fr 1.3fr; gap: 20px; align-items: start; }
+.l-vs-head { padding: 0 0 12px; border-bottom: 1px solid var(--border-2); font-size: 14px; color: var(--text-3); }
+.l-vs-head span:last-child { color: var(--accent); font-weight: 600; }
+.l-vs-row { padding: 18px 0; border-bottom: 1px solid var(--border); }
+.l-vs-row b { font-size: 16px; color: #fff; }
+.l-vs-app { color: var(--text-3); font-size: 15px; line-height: 1.5; text-decoration: line-through; text-decoration-color: rgba(255,255,255,.18); }
+.l-vs-coach { color: var(--text); font-size: 15px; line-height: 1.5; padding-left: 22px; position: relative; }
+.l-vs-coach::before { content: '✓'; position: absolute; left: 0; color: var(--lime); font-weight: 700; }
+@media (max-width: 760px) {
+  .l-vs-head { display: none; }
+  .l-vs-row { grid-template-columns: 1fr; gap: 6px; }
+  .l-vs-app::before { content: 'Appli : '; text-decoration: none; display: inline; }
+}
+
+.l-zones .l-h2 { font-size: clamp(44px, 5.2vw, 76px); }

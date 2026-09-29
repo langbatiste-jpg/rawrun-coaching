@@ -190,7 +190,7 @@ export default function CoachApp({ onLogout, showToast }) {
           {view === 'method' && <MethodPage showToast={showToast} />}
           {view === 'shop' && <ShopAdmin showToast={showToast} />}
           {view === 'goals' && <Goals athletes={athletes} raceGoals={raceGoals} onAdd={() => { setEditGoal(null); setModal('goal') }} onEdit={g => { setEditGoal(g); setModal('goal') }} onDelete={loadRaceGoals} showToast={showToast} />}
-          {view === 'notifications' && <Notifications notifications={notifications} athletes={athletes} openChat={openChat} />}
+          {view === 'notifications' && <Notifications notifications={notifications} athletes={athletes} openChat={openChat} go={go} />}
           {view === 'more' && (
             <div className="view-enter">
               <div className="page-title" style={{ marginBottom: 20 }}>Menu</div>
@@ -585,7 +585,7 @@ function Goals({ athletes, raceGoals, onAdd, onEdit, onDelete, showToast }) {
   )
 }
 
-function Notifications({ notifications, athletes, openChat }) {
+function Notifications({ notifications, athletes, openChat, go }) {
   return (
     <div className="view-enter">
       <div className="page-title" style={{ marginBottom: 24 }}>Notifications</div>
@@ -594,12 +594,12 @@ function Notifications({ notifications, athletes, openChat }) {
         {notifications.map(n => {
           const a = athletes.find(x => x.id === n.athlete_id)
           return (
-            <div key={n.id} className="card card-hover" onClick={() => openChat(n.athlete_id, n.session_key, n.session_name)} style={{ borderLeft: `3px solid ${n.read ? 'transparent' : 'var(--accent)'}` }}>
+            <div key={n.id} className="card card-hover" onClick={() => n.type === 'order' || n.type === 'subscription' ? go(n.type === 'order' ? 'shop' : 'athletes') : openChat(n.athlete_id, n.session_key, n.session_name)} style={{ borderLeft: `3px solid ${n.read ? 'transparent' : 'var(--accent)'}` }}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                <div style={{ fontSize: 18 }}>{n.type === 'completion' ? '✅' : '💬'}</div>
+                <div style={{ fontSize: 18 }}>{{ completion: '✅', order: '🛒', subscription: '🎉' }[n.type] || '💬'}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: 500 }}>{n.title}</div>
-                  <div className="muted" style={{ fontSize: 12.5 }}>{a?.name} · {new Date(n.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+                  <div className="muted" style={{ fontSize: 12.5 }}>{a?.name ? `${a.name} · ` : ''}{new Date(n.created_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
               </div>
               {n.detail && <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 8, paddingTop: 8, borderTop: '1px solid var(--border)' }}>{n.detail}</div>}

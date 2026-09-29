@@ -81,6 +81,14 @@ Si Vercel avait déjà déployé avant l'étape 5 : *Deployments* → les trois 
 5. Dans ton espace coach → **Boutique** : modifie les offres d'exemple (prix, contenu, minutes d'appel), ajoute tes produits avec photo, puis passe-les **« En vente »**. Rien n'apparaît sur le site tant que ce n'est pas en vente.
 6. Pour que tes abonnés puissent résilier seuls : Stripe → *Paramètres* → *Portail client* → active le lien de connexion, et colle-le dans la description de tes offres.
 
+7. Lance aussi `supabase/migration_v10_commandes.sql` (numéros de commande, codes d'accès, suivi d'expédition).
+
+**Ce qui se passe tout seul après un paiement :**
+- **Coaching** : le client reçoit par e-mail son **code d'accès** (ex. `HUGO4827`), son profil est créé dans *Athlètes*, et tu reçois une notification.
+- **Boutique** : le client reçoit une confirmation avec son numéro de commande (`LANG-2026-0001`), le stock baisse, et un **bon de livraison** est prêt dans *Boutique → Commandes* (liste à cocher + étiquette d'adresse à découper). Quand tu cliques *Marquer expédiée* (avec ou sans numéro de suivi), le client reçoit « ton colis est parti ».
+
+⚠️ **Pour que les e-mails arrivent chez tes clients**, il faut un nom de domaine vérifié dans Resend (ex. `lang-coaching.fr`, ~10 €/an). Sans domaine, Resend n'envoie qu'à ta propre adresse. Resend → *Domains* → *Add domain*, suis les instructions, puis mets sur Vercel `RESEND_FROM = LANG Coaching <coach@ton-domaine.fr>`.
+
 Chaque paiement t'envoie un e-mail et arrive dans *Boutique → Commandes* (adresse de livraison comprise). Stripe prend environ 1,5 % + 0,25 € par paiement en Europe.
 
 ## Bon à savoir
