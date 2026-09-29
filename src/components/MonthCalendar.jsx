@@ -1,20 +1,6 @@
 import { useState } from 'react'
-
-
-const SESSION_TYPES = [
-  { id: 'EF', label: 'EF', color: '#6b7280' },
-  { id: 'SEUIL', label: 'SL', color: '#fde047' },
-  { id: 'VMA', label: 'VMA', color: '#f43f5e' },
-  { id: 'FARTLEK', label: 'FK', color: '#a78bfa' },
-  { id: 'COTES', label: 'CÔT', color: '#f97316' },
-  { id: 'SORTIE', label: 'SL+', color: '#818cf8' },
-  { id: 'PISTE', label: 'PST', color: '#22d3ee' },
-  { id: 'RECUP', label: 'REC', color: '#94a3b8' },
-  { id: 'REPOS', label: '—', color: '#1e293b' },
-  { id: 'COMP', label: 'COMP', color: '#fbbf24' },
-  { id: 'CROSS', label: 'CRS', color: '#84cc16' },
-  { id: 'RENFO', label: 'RNF', color: '#fb923c' },
-]
+import { SESSION_TYPES as TYPES, isoDate } from '../../shared/training.js'
+const SESSION_TYPES = TYPES.map(t => ({ ...t, label: t.short }))
 
 export default function MonthCalendar({ athleteId, getSlot, sessions, completions, onSlotClick, raceGoals }) {
   const [monthOffset, setMonthOffset] = useState(0)
@@ -35,9 +21,9 @@ export default function MonthCalendar({ athleteId, getSlot, sessions, completion
 
   const getDateKey = (d) => {
     const date = new Date(year, month, d)
-    const monday = new Date(date)
-    monday.setDate(date.getDate() - ((date.getDay() + 6) % 7))
-    const weekKey = monday.toISOString().slice(0, 10)
+    const monday = new Date(year, month, d, 12)
+    monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7))
+    const weekKey = isoDate(monday)
     const dayIndex = (date.getDay() + 6) % 7
     return { weekKey, dayIndex }
   }
@@ -53,14 +39,14 @@ export default function MonthCalendar({ athleteId, getSlot, sessions, completion
       {/* Month nav */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
         <button className="btn-ghost" onClick={() => setMonthOffset(o => o - 1)}>←</button>
-        <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 700, textTransform: 'capitalize' }}>{monthName}</div>
+        <div style={{ fontFamily: 'var(--display)', fontSize: 28, textTransform: 'capitalize' }}>{monthName}</div>
         <button className="btn-ghost" onClick={() => setMonthOffset(o => o + 1)}>→</button>
       </div>
 
       {/* Day headers */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
         {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-          <div key={i} style={{ textAlign: 'center', fontSize: 10, color: '#475569', padding: '4px 0', letterSpacing: '0.06em' }}>{d}</div>
+          <div key={i} style={{ textAlign: 'center', fontSize: 10, color: 'var(--text-4)', padding: '4px 0', letterSpacing: '0.06em' }}>{d}</div>
         ))}
       </div>
 
@@ -79,19 +65,19 @@ export default function MonthCalendar({ athleteId, getSlot, sessions, completion
 
           return (
             <div key={i} onClick={() => onSlotClick && onSlotClick({ weekKey, dayIndex, slot })}
-              style={{ minHeight: 52, borderRadius: 6, background: isToday ? '#1a2235' : '#111827', border: `1px solid ${isToday ? '#334155' : '#1e293b'}`, padding: '4px', cursor: 'pointer', transition: 'all 0.1s', position: 'relative' }}
-              onMouseEnter={e => e.currentTarget.style.borderColor = '#334155'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = isToday ? '#334155' : '#1e293b'}>
-              <div style={{ fontSize: 10, color: isToday ? '#e11d48' : '#475569', fontWeight: isToday ? 700 : 400, marginBottom: 2 }}>{d}</div>
+              style={{ minHeight: 64, borderRadius: 8, background: 'var(--glass)', border: `1px solid ${isToday ? 'var(--accent)' : 'var(--border)'}`, padding: '5px', cursor: 'pointer', transition: 'border-color .15s', position: 'relative', minWidth: 0, overflow: 'hidden' }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--border-2)'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = isToday ? 'var(--accent)' : 'var(--border)'}>
+              <div style={{ fontSize: 10, color: isToday ? 'var(--accent)' : 'var(--text-4)', fontWeight: isToday ? 700 : 400, marginBottom: 2 }}>{d}</div>
               {race && (
-                <div style={{ background: race.goal_type === 'primary' ? '#fbbf24' : '#64748b', borderRadius: 3, padding: '1px 4px', fontSize: 9, color: '#000', marginBottom: 2, fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+                <div style={{ background: race.goal_type === 'primary' ? 'var(--lime)' : 'var(--text-3)', borderRadius: 3, padding: '1px 4px', fontSize: 9, color: '#000', marginBottom: 2, fontWeight: 600, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
                   🏆 {race.name}
                 </div>
               )}
               {slot && slot.session_type !== 'REPOS' && st && (
-                <div style={{ background: (comp ? '#4ade80' : st.color) + '33', borderRadius: 3, padding: '1px 4px', fontSize: 9, color: comp ? '#4ade80' : st.color, fontWeight: 600 }}>
+                <div style={{ background: (comp ? 'var(--lime)' : st.color) + '33', borderRadius: 3, padding: '1px 4px', fontSize: 9, color: comp ? 'var(--lime)' : st.color, fontWeight: 600 }}>
                   {comp ? '✓' : ''} {st.label}
-                  {slot.km > 0 && <span style={{ color: '#64748b', marginLeft: 3 }}>{slot.km}k</span>}
+                  {slot.km > 0 && <span style={{ color: 'var(--text-3)', marginLeft: 3 }}>{slot.km}k</span>}
                 </div>
               )}
             </div>

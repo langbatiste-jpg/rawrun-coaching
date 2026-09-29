@@ -1,60 +1,60 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../supabase'
+import { useMemo } from 'react'
 import { getWeekKey } from '../utils'
+import { loadRatio } from '../lib/insights'
 
-export default function LoadChart({ athleteId, weeks = 8 }) {
-  const [data, setData] = useState([])
-
-  useEffect(() => { if (athleteId) loadData() }, [athleteId])
-
-  const loadData = async () => {
-    const weekKeys = []
-    for (let i = weeks - 1; i >= 0; i--) weekKeys.push(getWeekKey(-i))
-
-    const { data: slots } = await supabase.from('week_slots').select('*').eq('athlete_id', athleteId).in('week_key', weekKeys)
-    const { data: completions } = await supabase.from('completions').select('*').eq('athlete_id', athleteId)
-
-    const compMap = {}
-    completions?.forEach(c => { compMap[c.session_key] = c })
-
-    const weekData = weekKeys.map(wk => {
-      const weekSlots = slots?.filter(s => s.week_key === wk) || []
-      const planned = weekSlots.reduce((s, d) => s + (d.km || 0), 0)
-      const realized = weekSlots.reduce((s, d) => {
-        const key = `${athleteId}__${wk}__${d.day_index}`
-        return s + (compMap[key]?.real_km || 0)
-      }, 0)
-      return { wk: wk.slice(5), planned, realized }
-    })
-    setData(weekData)
-  }
-
-  const maxKm = Math.max(...data.map(d => Math.max(d.planned, d.realized)), 10)
+// Volume prévu vs réalisé sur 8 semaines + ratio charge aiguë / chronique
+export default function LoadChart({ athleteId, completions = {}, weekData = {}, weeks = 8 }) {
+  const data = useMemo(() => {
+    const out = []
+    for (let i = weeks - 1; i >= -1; i--) {
+      const wk = getWeekKey(-i)
+      let planned = 0, realized = 0
+      for (let d = 0; d < 7; d++) {
+        const key = `${athleteId}__${wk}__${d}`
+        planned += Number(weekData[key]?.km) || 0
+        const c = completions[key]
+        if (c) realized += Number(c.real_km) || Number(weekData[key]?.km) || 0
+      }
+      out.push({ wk, planned: Math.round(planned), realized: Math.round(realized), future: i === -1, current: i === 0 })
+    }
+    return out
+  }, [athleteId, completions, weekData, weeks])
+  const { acute, chronic, ratio } = loadRatio(athleteId, completions, weekData)
+  const max = Math.max(10, ...data.map(d => Math.max(d.planned, d.realized)))
+  const W = 100 / data.length
+  const ratioColor = ratio === null ? 'var(--text-3)' : ratio > 1.5 ? 'var(--danger)' : ratio > 1.3 ? 'var(--gold)' : ratio < 0.8 ? 'var(--text-2)' : 'var(--lime)'
+  const ratioText = ratio === null ? 'Pas assez de retours de séance' : ratio > 1.5 ? 'Hausse brutale : risque de blessure' : ratio > 1.3 ? 'Charge qui monte vite' : ratio < 0.8 ? 'Charge en baisse' : 'Zone de progression'
 
   return (
-    <div style={{ background: '#0a0f1a', borderRadius: 10, padding: 14 }}>
-      <div style={{ fontSize: 11, color: '#64748b', letterSpacing: '0.06em', marginBottom: 12 }}>CHARGE D'ENTRAÎNEMENT — {weeks} SEMAINES</div>
-      <div style={{ display: 'flex', gap: 4, alignItems: 'flex-end', height: 80 }}>
-        {data.map((d, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div style={{ width: '100%', display: 'flex', gap: 2, alignItems: 'flex-end', height: 72 }}>
-              <div style={{ flex: 1, height: Math.round((d.planned / maxKm) * 70), background: '#334155', borderRadius: '2px 2px 0 0', minHeight: 2 }} title={`Planifié: ${d.planned}km`} />
-              <div style={{ flex: 1, height: Math.round((d.realized / maxKm) * 70), background: '#e11d48', borderRadius: '2px 2px 0 0', minHeight: d.realized > 0 ? 2 : 0 }} title={`Réalisé: ${d.realized}km`} />
-            </div>
-            <div style={{ fontSize: 9, color: '#334155' }}>{d.wk}</div>
+    <div className="card">
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
+        <div><b>Volume</b><div className="muted" style={{ fontSize: 12.5 }}>Prévu (contour) et réalisé (plein), en km</div></div>
+        <div style={{ textAlign: 'right' }}>
+          <div className="num" style={{ fontSize: 20, color: ratioColor }}>{ratio === null ? '—' : `×${ratio.toFixed(2)}`}</div>
+          <div className="muted" style={{ fontSize: 12 }}>{ratioText}</div>
+        </div>
+      </div>
+      <svg viewBox="0 0 100 44" preserveAspectRatio="none" style={{ width: '100%', height: 130, display: 'block', overflow: 'visible' }} role="img" aria-label="Volume hebdomadaire">
+        {data.map((d, i) => {
+          const x = i * W + W * 0.18, bw = W * 0.64
+          const hp = (d.planned / max) * 38, hr = (d.realized / max) * 38
+          return (
+            <g key={d.wk}>
+              <rect x={x} y={40 - hp} width={bw} height={hp} rx="0.8" fill="none" stroke={d.current ? 'rgba(255,90,31,.8)' : 'rgba(255,255,255,.22)'} strokeWidth="0.35" strokeDasharray={d.future ? '1 0.8' : ''} vectorEffect="non-scaling-stroke" />
+              {hr > 0 && <rect x={x} y={40 - hr} width={bw} height={hr} rx="0.8" fill={d.current ? '#ff5a1f' : '#c8ff2e'} opacity={d.current ? 1 : 0.85} />}
+            </g>
+          )
+        })}
+      </svg>
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${data.length}, 1fr)`, marginTop: 6 }}>
+        {data.map(d => (
+          <div key={d.wk} style={{ textAlign: 'center', fontSize: 10.5, color: d.current ? 'var(--accent)' : 'var(--text-4)' }} className="num">
+            <div style={{ color: 'var(--text-2)' }}>{d.realized || (d.future ? d.planned : 0)}</div>
+            {new Date(d.wk + 'T12:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'numeric' })}
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 16, marginTop: 8, fontSize: 11 }}>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <div style={{ width: 10, height: 10, background: '#334155', borderRadius: 2 }} />
-          <span style={{ color: '#64748b' }}>Planifié</span>
-        </div>
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <div style={{ width: 10, height: 10, background: '#e11d48', borderRadius: 2 }} />
-          <span style={{ color: '#64748b' }}>Réalisé</span>
-        </div>
-      </div>
+      {chronic > 0 && <div className="muted" style={{ fontSize: 12, marginTop: 10 }}>Charge (RPE × km) : {acute} sur 7 jours, {chronic} en moyenne hebdo sur 4 semaines.</div>}
     </div>
   )
 }

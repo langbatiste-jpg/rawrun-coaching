@@ -9,7 +9,8 @@ const QUESTIONS = [
   { key: 'soreness', label: 'Douleurs musculaires', emoji: '🦵', low: 'Très courbaturé', high: 'Aucune douleur', invert: true },
 ]
 
-export function WellnessCheckIn({ athleteId, onDone }) {
+export function WellnessCheckIn({ athleteId, onDone, compact = false }) {
+  const [open, setOpen] = useState(!compact)
   const [scores, setScores] = useState({ form: 5, fatigue: 5, moral: 5, sleep: 5, soreness: 5 })
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
@@ -30,36 +31,44 @@ export function WellnessCheckIn({ athleteId, onDone }) {
     setSaving(true)
     await supabase.from('wellness').upsert({ athlete_id: athleteId, date: today, ...scores, notes }, { onConflict: 'athlete_id,date' })
     setSaving(false)
+    setAlreadyDone(true)
     if (onDone) onDone()
   }
 
   if (alreadyDone) return null
+  if (!open) return (
+    <button className="card card-hover" onClick={() => setOpen(true)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, color: 'var(--text)', textAlign: 'left', marginBottom: 16 }}>
+      <span style={{ fontSize: 22 }}>🫀</span>
+      <span style={{ flex: 1 }}><b>Check-in du jour</b><br /><span className="muted" style={{ fontSize: 13 }}>Forme, fatigue, sommeil : 10 secondes</span></span>
+      <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Faire</span>
+    </button>
+  )
 
   return (
-    <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: 12, padding: 20, marginBottom: 20 }}>
-      <div style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 4 }}>Comment tu vas aujourd'hui ?</div>
-      <div style={{ fontSize: 12, color: '#64748b', marginBottom: 16 }}>Quelques secondes pour que ton coach suive ton état.</div>
+    <div className="card" style={{ marginBottom: 16 }}>
+      <div className="display" style={{ fontSize: 28, marginBottom: 2 }}>Comment tu te sens ?</div>
+      <div className="muted" style={{ fontSize: 13, marginBottom: 16 }}>Dix secondes pour que ton coach adapte la suite.</div>
       {QUESTIONS.map(q => (
         <div key={q.key} style={{ marginBottom: 14 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <div style={{ fontSize: 13 }}>{q.emoji} {q.label}</div>
-            <div style={{ fontSize: 12, color: '#e11d48', fontWeight: 600 }}>{scores[q.key]}/10</div>
+            <div style={{ fontSize: 14 }}>{q.emoji} {q.label}</div>
+            <div className="num" style={{ fontSize: 13, color: scoreColor(scores[q.key]) }}>{scores[q.key]}/10</div>
           </div>
-          <input type="range" min={1} max={10} value={scores[q.key]}
+          <input type="range" min={1} max={10} value={scores[q.key]} aria-label={q.label}
             onChange={e => setScores(s => ({ ...s, [q.key]: Number(e.target.value) }))}
-            style={{ width: '100%', accentColor: '#e11d48' }} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: '#475569' }}>
+            style={{ width: '100%', accentColor: scoreColor(scores[q.key]) }} />
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text-4)' }}>
             <span>{q.low}</span><span>{q.high}</span>
           </div>
         </div>
       ))}
-      <div style={{ marginBottom: 12 }}>
-        <textarea className="input" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Quelque chose à signaler à ton coach ? (douleur, stress, maladie…)" />
-      </div>
-      <button className="btn-primary" onClick={save} disabled={saving} style={{ width: '100%' }}>{saving ? 'Envoi…' : 'Envoyer mon état du jour'}</button>
+      <textarea className="input" value={notes} onChange={e => setNotes(e.target.value)} rows={2} style={{ marginBottom: 12 }} placeholder="Quelque chose à signaler ? (douleur, stress, maladie…)" />
+      <button className="btn-primary" onClick={save} disabled={saving} style={{ width: '100%' }}>{saving ? 'Envoi…' : 'Envoyer'}</button>
     </div>
   )
 }
+
+const scoreColor = v => v >= 7 ? '#c8ff2e' : v >= 5 ? '#fbbf24' : '#ff3b5c'
 
 export function WellnessChart({ athleteId, days = 14 }) {
   const [data, setData] = useState([])
@@ -72,33 +81,27 @@ export function WellnessChart({ athleteId, days = 14 }) {
     setData(data || [])
   }
 
-  if (data.length === 0) return <div style={{ fontSize: 12, color: '#475569', textAlign: 'center', padding: 16 }}>Pas encore de données bien-être.</div>
+  if (data.length === 0) return <div className="card muted" style={{ fontSize: 13 }}>Pas encore de check-in bien-être sur les {days} derniers jours.</div>
 
-  const avg = (key) => data.length ? (data.reduce((s, d) => s + (d[key] || 0), 0) / data.length).toFixed(1) : 0
+  const avg = key => (data.reduce((s, d) => s + (d[key] || 0), 0) / data.length).toFixed(1)
 
   return (
-    <div style={{ background: '#0a0f1a', borderRadius: 10, padding: 14 }}>
-      <div style={{ fontSize: 11, color: '#64748b', letterSpacing: '0.06em', marginBottom: 12 }}>BIEN-ÊTRE — {days} DERNIERS JOURS</div>
-      <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+    <div className="card">
+      <b>Bien-être</b><div className="muted" style={{ fontSize: 12.5, marginBottom: 14 }}>Moyennes sur {days} jours (10 = au top)</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(96px, 1fr))', gap: 8, marginBottom: 14 }}>
         {QUESTIONS.map(q => (
-          <div key={q.key} style={{ background: '#111827', borderRadius: 8, padding: '8px 12px', textAlign: 'center' }}>
-            <div style={{ fontSize: 16 }}>{q.emoji}</div>
-            <div style={{ fontSize: 16, fontWeight: 800, color: '#e11d48', fontFamily: "'Syne'" }}>{avg(q.key)}</div>
-            <div style={{ fontSize: 10, color: '#64748b' }}>{q.label}</div>
+          <div key={q.key} className="panel" style={{ textAlign: 'center', padding: 10 }}>
+            <div className="num" style={{ fontSize: 20, color: scoreColor(Number(avg(q.key))) }}>{avg(q.key)}</div>
+            <div className="muted" style={{ fontSize: 11.5 }}>{q.emoji} {q.label}</div>
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 60 }}>
+      <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 60 }}>
         {data.map((d, i) => {
-          const score = (d.form + (10 - d.fatigue) + d.moral + d.sleep + (10 - d.soreness)) / 5
-          const h = Math.round((score / 10) * 56)
-          const color = score >= 7 ? '#4ade80' : score >= 5 ? '#fde047' : '#f43f5e'
-          return (
-            <div key={i} style={{ flex: 1, height: h, background: color, borderRadius: 2, opacity: 0.8 }} title={`${d.date}: ${score.toFixed(1)}/10`} />
-          )
+          const score = (d.form + d.fatigue + d.moral + d.sleep + d.soreness) / 5
+          return <div key={i} style={{ flex: 1, height: `${score * 10}%`, background: scoreColor(score), borderRadius: 2, opacity: .85 }} title={`${d.date} : ${score.toFixed(1)}/10${d.notes ? ' — ' + d.notes : ''}`} />
         })}
       </div>
-      <div style={{ fontSize: 10, color: '#334155', textAlign: 'center', marginTop: 4 }}>Score global quotidien</div>
     </div>
   )
 }

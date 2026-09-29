@@ -1,41 +1,11 @@
 import { useState } from 'react'
 import { BASE_ZONES } from '../constants'
-import { secsToPace, parsePace } from '../utils'
+import { calcBlockDistance, calcTotalDistance } from '../../shared/training.js'
 
 const TIME_UNITS = ['sec', 'min', 'h']
 const DIST_UNITS = ['m', 'km']
 
-function toSeconds(val, unit) {
-  if (unit === 'sec') return Number(val)
-  if (unit === 'min') return Number(val) * 60
-  if (unit === 'h') return Number(val) * 3600
-  return Number(val)
-}
-
-export function calcBlockDistance(block, zones) {
-  if (block.durationType === 'distance') {
-    return block.distUnit === 'km' ? Number(block.distance) : Number(block.distance) / 1000
-  }
-  const z = zones[block.zone - 1]
-  if (!z || !z.paceMin || z.paceMin === '—') return 0
-  const paceSecs = parsePace(z.paceMin)
-  const secs = toSeconds(block.duration, block.timeUnit)
-  return paceSecs > 0 ? (secs / paceSecs) : 0
-}
-
-export function calcTotalDistance(blocks, zones) {
-  let total = 0
-  blocks.forEach(b => {
-    const reps = b.isLoop ? (b.loopReps || 1) : 1
-    if (b.isLoop && b.loopBlocks) {
-      const loopDist = b.loopBlocks.reduce((s, lb) => s + calcBlockDistance(lb, zones), 0)
-      total += loopDist * reps
-    } else {
-      total += calcBlockDistance(b, zones) * reps
-    }
-  })
-  return Math.round(total * 10) / 10
-}
+export { calcBlockDistance, calcTotalDistance }
 
 const EMPTY_BLOCK = { id: null, name: '', zone: 1, durationType: 'time', duration: 10, timeUnit: 'min', distance: 400, distUnit: 'm', lapMode: 'auto', isLoop: false, loopReps: 3, loopBlocks: [] }
 
@@ -103,7 +73,7 @@ export default function SessionBuilder({ draft, setDraft, zones }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div className="fg-label">Structure de la séance</div>
+        <div className="fg-label">Structure</div>
         {totalKm > 0 && <div style={{ fontSize: 11, color: 'var(--green)', fontWeight: 600 }}>≈ {totalKm} km</div>}
       </div>
 
@@ -162,9 +132,9 @@ export default function SessionBuilder({ draft, setDraft, zones }) {
       {addingBlock ? (
         <div style={{ background: 'var(--bg-2)', borderRadius: 8, padding: 12, border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
-            <button style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'Space Grotesk'", fontSize: 11, fontWeight: 500, background: !blockDraft.isLoop ? 'var(--bg-4)' : 'transparent', color: !blockDraft.isLoop ? '#fff' : 'var(--text-3)' }}
+            <button style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, background: !blockDraft.isLoop ? 'var(--bg-4)' : 'transparent', color: !blockDraft.isLoop ? '#fff' : 'var(--text-3)' }}
               onClick={() => setBlockDraft(d => ({ ...d, isLoop: false }))}>Bloc simple</button>
-            <button style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'Space Grotesk'", fontSize: 11, fontWeight: 500, background: blockDraft.isLoop ? 'var(--red-glow)' : 'transparent', color: blockDraft.isLoop ? 'var(--red)' : 'var(--text-3)' }}
+            <button style={{ flex: 1, padding: '7px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, background: blockDraft.isLoop ? 'var(--red-glow)' : 'transparent', color: blockDraft.isLoop ? 'var(--red)' : 'var(--text-3)' }}
               onClick={() => setBlockDraft(d => ({ ...d, isLoop: true }))}>🔁 Boucle (répétitions)</button>
           </div>
           {blockDraft.isLoop ? (
@@ -197,7 +167,7 @@ function MiniBlockForm({ draft, setDraft, zones, onAdd, onCancel }) {
       </select>
       <div style={{ display: 'flex', gap: 3, background: 'var(--bg-3)', borderRadius: 6, padding: 3 }}>
         {['time', 'distance'].map(t => (
-          <button key={t} style={{ flex: 1, padding: '5px', borderRadius: 4, border: 'none', cursor: 'pointer', fontFamily: "'Space Grotesk'", fontSize: 11, fontWeight: 500, background: draft.durationType === t ? 'var(--bg-4)' : 'transparent', color: draft.durationType === t ? '#fff' : 'var(--text-3)' }}
+          <button key={t} style={{ flex: 1, padding: '5px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, background: draft.durationType === t ? 'var(--bg-4)' : 'transparent', color: draft.durationType === t ? '#fff' : 'var(--text-3)' }}
             onClick={() => setDraft(d => ({ ...d, durationType: t }))}>
             {t === 'time' ? '⏱ Temps' : '📏 Distance'}
           </button>
@@ -220,7 +190,7 @@ function MiniBlockForm({ draft, setDraft, zones, onAdd, onCancel }) {
       )}
       <div style={{ display: 'flex', gap: 3, background: 'var(--bg-3)', borderRadius: 6, padding: 3 }}>
         {[['auto', '▶ Auto'], ['lap', '⌨ LAP']].map(([v, l]) => (
-          <button key={v} style={{ flex: 1, padding: '5px', borderRadius: 4, border: 'none', cursor: 'pointer', fontFamily: "'Space Grotesk'", fontSize: 11, fontWeight: 500, background: draft.lapMode === v ? 'var(--bg-4)' : 'transparent', color: draft.lapMode === v ? '#fff' : 'var(--text-3)' }}
+          <button key={v} style={{ flex: 1, padding: '5px', borderRadius: 4, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 500, background: draft.lapMode === v ? 'var(--bg-4)' : 'transparent', color: draft.lapMode === v ? '#fff' : 'var(--text-3)' }}
             onClick={() => setDraft(d => ({ ...d, lapMode: v }))}>{l}</button>
         ))}
       </div>

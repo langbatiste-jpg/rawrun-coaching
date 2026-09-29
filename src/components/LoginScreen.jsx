@@ -1,179 +1,134 @@
 import { useState } from 'react'
 
 const COACHES = [
-  {
-    id: 'batlarun',
-    name: 'Batlarun',
-    desc: 'Coureur aguerri — à 3\'20 il est en footing',
-    photo: '/coaches/batlarun.jpg',
-    emoji: '🏃'
-  },
-  {
-    id: 'batlaro',
-    name: 'Batlaro',
-    desc: 'Instagrameur — il essaye de faire des dumps',
-    photo: '/coaches/batlaro.jpg',
-    emoji: '📸'
-  },
-  {
-    id: 'batiste',
-    name: 'Batiste',
-    desc: 'Chargé de partenariats et du développement commercial chez RAWRUN',
-    photo: '/coaches/batiste.jpg',
-    emoji: '💼'
-  }
+  { id: 'batlarun', name: 'Batlarun', emoji: '🏃', desc: "Coureur aguerri — à 3'20 il est en footing" },
+  { id: 'batlaro', name: 'Batlaro', emoji: '📸', desc: 'Instagrameur — il essaye de faire des dumps' },
+  { id: 'batiste', name: 'Batiste', emoji: '💼', desc: 'Partenariats et développement commercial chez RAWRUN' },
 ]
 
-export default function LoginScreen({ onLogin }) {
-  const [mode, setMode] = useState('login') // login | register | coach-login
-  const [code, setCode] = useState('')
+export default function LoginScreen({ onAthleteLogin, onCoachLogin }) {
+  const [mode, setMode] = useState('code') // code | email | register
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
-  const [showCoachLogin, setShowCoachLogin] = useState(false)
-  const [coachCode, setCoachCode] = useState('')
+  const [code, setCode] = useState('')
+  const [cred, setCred] = useState({ email: '', password: '' })
+  const [reg, setReg] = useState({ step: 1, coach: null, name: '', email: '', password: '' })
+  const [coachOpen, setCoachOpen] = useState(false)
+  const [coachCred, setCoachCred] = useState({ email: '', password: '' })
 
-  // Register state
-  const [regStep, setRegStep] = useState(1) // 1=coach choice, 2=form
-  const [selectedCoach, setSelectedCoach] = useState(null)
-  const [regForm, setRegForm] = useState({ name: '', email: '', password: '' })
-
-  const handleAthleteLogin = async () => {
-    if (!code.trim()) return
-    setLoading(true)
-    setError('')
-    const ok = await onLogin(code)
-    if (!ok) setError('Code inconnu. Contacte ton coach.')
+  const run = async fn => {
+    setLoading(true); setError('')
+    try { await fn() } catch (e) { setError(e.message) }
     setLoading(false)
   }
+  const switchMode = m => { setMode(m); setError('') }
+  const onEnter = fn => e => e.key === 'Enter' && fn()
 
-  const handleCoachLogin = async () => {
-    if (coachCode.trim().toUpperCase() === 'RAWRUN') {
-      setLoading(true)
-      await onLogin('RAWRUN')
-      setLoading(false)
-    } else {
-      setError('Code coach incorrect.')
-    }
-  }
-
-  const handleRegister = async () => {
-    if (!regForm.name || !regForm.email || !regForm.password) return setError('Remplis tous les champs')
-    setLoading(true)
-    setError('')
-    const ok = await onLogin(null, { ...regForm, coachId: selectedCoach.id, isRegister: true })
-    if (!ok) setError('Erreur lors de la création du compte.')
-    setLoading(false)
-  }
+  const submitCode = () => code.trim() && run(() => onAthleteLogin({ action: 'code', code }))
+  const submitEmail = () => run(() => onAthleteLogin({ action: 'login', ...cred }))
+  const submitRegister = () => run(() => onAthleteLogin({ action: 'register', name: reg.name, email: reg.email, password: reg.password, coachId: reg.coach }))
+  const submitCoach = () => run(() => onCoachLogin(coachCred.email, coachCred.password))
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: 20, background: '#080d16' }}>
+    <div className="login-wrap">
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');;
-        * { box-sizing: border-box; }
-        .login-input { background: #0a0f1a; border: 1px solid #1e293b; color: #e2e8f0; border-radius: 8px; padding: 10px 14px; font-family: 'Space Mono', monospace; font-size: 13px; width: 100%; outline: none; transition: border 0.12s; }
-        .login-input:focus { border-color: #e11d48; }
-        .btn-red { background: #e11d48; color: #fff; border: none; cursor: pointer; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 13px; padding: 11px 20px; font-weight: 500; transition: all 0.12s; width: 100%; }
-        .btn-red:hover { background: #be123c; }
-        .btn-outline { background: transparent; border: 1px solid #1e293b; color: #94a3b8; cursor: pointer; border-radius: 8px; font-family: 'Space Mono', monospace; font-size: 12px; padding: 9px 16px; transition: all 0.12s; }
-        .btn-outline:hover { border-color: #334155; color: #e2e8f0; }
-        .coach-card { background: #111827; border: 2px solid #1e293b; border-radius: 12px; padding: 16px; cursor: pointer; transition: all 0.15s; text-align: center; }
-        .coach-card:hover { border-color: #e11d48; transform: translateY(-2px); }
-        .coach-card.selected { border-color: #e11d48; background: #1a0a10; }
+        .login-wrap { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 40px; padding: 40px clamp(20px, 5vw, 72px); }
+        .login-hero h1 { font-family: var(--display); font-size: clamp(88px, 15vw, 220px); line-height: .82; letter-spacing: .01em; color: #fff; animation: heroIn 1s var(--ease) both; }
+        .login-hero h1 span { display: block; color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
+        .login-hero p { font-size: 17px; color: var(--text-2); max-width: 30ch; margin-top: 22px; animation: heroIn 1s .15s var(--ease) both; }
+        .login-card { width: 100%; max-width: 420px; justify-self: center; animation: heroIn .9s .25s var(--ease) both; }
+        .login-card .card { padding: 24px; }
+        .coach-pick { display: grid; gap: 8px; }
+        .coach-opt { display: flex; gap: 12px; align-items: center; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid var(--border-2); background: rgba(0,0,0,.25); color: var(--text); cursor: pointer; transition: all .15s; }
+        .coach-opt:hover { border-color: rgba(255,255,255,.3); }
+        .coach-opt.on { border-color: var(--accent); background: var(--accent-glow); }
+        .coach-opt .em { font-size: 26px; }
+        .coach-door { position: fixed; right: 14px; bottom: calc(12px + var(--safe-b)); background: none; border: none; color: var(--text-4); cursor: pointer; font-size: 18px; letter-spacing: 2px; padding: 8px; opacity: .5; }
+        .coach-door:hover { opacity: 1; color: var(--text-2); }
+        @keyframes heroIn { from { opacity: 0; transform: translateY(24px); } }
+        @media (max-width: 860px) {
+          .login-wrap { grid-template-columns: 1fr; gap: 28px; padding: calc(40px + env(safe-area-inset-top,0px)) 18px 40px; align-content: start; }
+          .login-hero p { font-size: 15px; margin-top: 14px; }
+        }
       `}</style>
 
-      {/* Logo */}
-      <div style={{ marginBottom: 6 }}>
-        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 52, fontWeight: 800, letterSpacing: '-0.04em', color: '#fff' }}>RAW</span>
-        <span style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 52, fontWeight: 800, letterSpacing: '-0.04em', color: '#e11d48' }}>RUN</span>
+      <div className="login-hero">
+        <h1>RAW<span>RUN</span></h1>
+        <p>Ton plan, tes allures, ton coach. Tout ce qu'il faut pour courir plus vite, au même endroit.</p>
       </div>
-      <div style={{ fontSize: 11, color: '#475569', letterSpacing: '0.18em', marginBottom: 40 }}>COACHING PLATFORM</div>
 
-      {/* Coach login modal */}
-      {showCoachLogin && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100, padding: 20 }}>
-          <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: 16, padding: 28, width: '100%', maxWidth: 360 }}>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 16 }}>Accès Coach</div>
-            <input className="login-input" type="password" placeholder="Code coach" value={coachCode} onChange={e => setCoachCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleCoachLogin()} style={{ marginBottom: 10 }} autoFocus />
-            {error && <div style={{ color: '#e11d48', fontSize: 12, marginBottom: 10 }}>{error}</div>}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn-outline" onClick={() => { setShowCoachLogin(false); setError('') }}>Annuler</button>
-              <button className="btn-red" onClick={handleCoachLogin} disabled={loading}>{loading ? '…' : 'Entrer'}</button>
+      <div className="login-card">
+        <div className="card">
+          <div className="tab-bar" style={{ display: 'flex', marginBottom: 22 }}>
+            {[['code', 'Code'], ['email', 'Email'], ['register', 'Créer un compte']].map(([m, l]) => (
+              <button key={m} className={`tab-btn ${mode === m ? 'active' : ''}`} style={{ flex: 1 }} onClick={() => switchMode(m)}>{l}</button>
+            ))}
+          </div>
+
+          {mode === 'code' && (
+            <div className="fg" style={{ gap: 12 }}>
+              <label className="fg-label" htmlFor="code">Ton code d'accès (envoyé par ton coach)</label>
+              <input id="code" className="input num" style={{ fontSize: 18, letterSpacing: '.12em', textTransform: 'uppercase' }} placeholder="YOANN23" value={code} onChange={e => setCode(e.target.value)} onKeyDown={onEnter(submitCode)} autoFocus autoCapitalize="characters" autoComplete="off" />
+              {error && <div className="err-msg">{error}</div>}
+              <button className="btn-primary" onClick={submitCode} disabled={loading}>{loading ? 'Vérification…' : 'Se connecter'}</button>
+            </div>
+          )}
+
+          {mode === 'email' && (
+            <div className="fg" style={{ gap: 12 }}>
+              <input className="input" type="email" placeholder="ton@email.com" autoComplete="email" value={cred.email} onChange={e => setCred(c => ({ ...c, email: e.target.value }))} />
+              <input className="input" type="password" placeholder="Mot de passe" autoComplete="current-password" value={cred.password} onChange={e => setCred(c => ({ ...c, password: e.target.value }))} onKeyDown={onEnter(submitEmail)} />
+              {error && <div className="err-msg">{error}</div>}
+              <button className="btn-primary" onClick={submitEmail} disabled={loading}>{loading ? 'Vérification…' : 'Se connecter'}</button>
+            </div>
+          )}
+
+          {mode === 'register' && reg.step === 1 && (
+            <div className="fg" style={{ gap: 12 }}>
+              <div style={{ fontWeight: 600 }}>Choisis ton coach</div>
+              <div className="coach-pick">
+                {COACHES.map(c => (
+                  <button key={c.id} className={`coach-opt ${reg.coach === c.id ? 'on' : ''}`} onClick={() => setReg(r => ({ ...r, coach: c.id }))}>
+                    <span className="em">{c.emoji}</span>
+                    <span><b>{c.name}</b><br /><span className="muted" style={{ fontSize: 12.5 }}>{c.desc}</span></span>
+                  </button>
+                ))}
+              </div>
+              <button className="btn-primary" disabled={!reg.coach} onClick={() => setReg(r => ({ ...r, step: 2 }))}>Continuer</button>
+            </div>
+          )}
+
+          {mode === 'register' && reg.step === 2 && (
+            <div className="fg" style={{ gap: 12 }}>
+              <button className="btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setReg(r => ({ ...r, step: 1 }))}>← Coach : {COACHES.find(c => c.id === reg.coach)?.name}</button>
+              <input className="input" placeholder="Prénom Nom" autoComplete="name" value={reg.name} onChange={e => setReg(r => ({ ...r, name: e.target.value }))} />
+              <input className="input" type="email" placeholder="ton@email.com" autoComplete="email" value={reg.email} onChange={e => setReg(r => ({ ...r, email: e.target.value }))} />
+              <input className="input" type="password" placeholder="Mot de passe (6 caractères min.)" autoComplete="new-password" value={reg.password} onChange={e => setReg(r => ({ ...r, password: e.target.value }))} onKeyDown={onEnter(submitRegister)} />
+              {error && <div className="err-msg">{error}</div>}
+              <button className="btn-primary" onClick={submitRegister} disabled={loading}>{loading ? 'Création…' : 'Créer mon compte'}</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <button className="coach-door" aria-label="Accès coach" onClick={() => { setCoachOpen(true); setError('') }}>···</button>
+
+      {coachOpen && (
+        <div className="overlay" onClick={() => setCoachOpen(false)}>
+          <div className="modal" style={{ maxWidth: 380 }} onClick={e => e.stopPropagation()}>
+            <div className="modal-title">Accès coach</div>
+            <div className="fg" style={{ gap: 12 }}>
+              <input className="input" type="email" placeholder="Email coach" autoComplete="username" value={coachCred.email} onChange={e => setCoachCred(c => ({ ...c, email: e.target.value }))} autoFocus />
+              <input className="input" type="password" placeholder="Mot de passe" autoComplete="current-password" value={coachCred.password} onChange={e => setCoachCred(c => ({ ...c, password: e.target.value }))} onKeyDown={onEnter(submitCoach)} />
+              {error && <div className="err-msg">{error}</div>}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button className="btn-ghost" onClick={() => setCoachOpen(false)}>Annuler</button>
+                <button className="btn-primary" style={{ flex: 1 }} onClick={submitCoach} disabled={loading}>{loading ? '…' : 'Entrer'}</button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      {/* Main card */}
-      <div style={{ background: '#111827', border: '1px solid #1e293b', borderRadius: 16, padding: 28, width: '100%', maxWidth: mode === 'register' && regStep === 1 ? 760 : 380 }}>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#0a0f1a', borderRadius: 8, padding: 4 }}>
-          <button onClick={() => { setMode('login'); setError('') }} style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'Space Mono'", fontSize: 12, background: mode === 'login' ? '#1e293b' : 'transparent', color: mode === 'login' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
-            Connexion
-          </button>
-          <button onClick={() => { setMode('register'); setRegStep(1); setError('') }} style={{ flex: 1, padding: '8px', borderRadius: 6, border: 'none', cursor: 'pointer', fontFamily: "'Space Mono'", fontSize: 12, background: mode === 'register' ? '#1e293b' : 'transparent', color: mode === 'register' ? '#fff' : '#64748b', transition: 'all 0.12s' }}>
-            Créer un compte
-          </button>
-        </div>
-
-        {mode === 'login' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ fontSize: 10, color: '#64748b', letterSpacing: '0.08em' }}>TON CODE D'ACCÈS</div>
-            <input className="login-input" placeholder="ex: YOANN23" value={code} onChange={e => setCode(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAthleteLogin()} autoFocus />
-            {error && <div style={{ color: '#e11d48', fontSize: 12 }}>{error}</div>}
-            <button className="btn-red" onClick={handleAthleteLogin} disabled={loading}>{loading ? 'Vérification…' : 'Se connecter →'}</button>
-            <div style={{ fontSize: 11, color: '#334155', textAlign: 'center', marginTop: 4 }}>
-              Ton code t'a été envoyé par ton coach
-            </div>
-          </div>
-        )}
-
-        {mode === 'register' && regStep === 1 && (
-          <div>
-            <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Choisis ton coach</div>
-            <div style={{ fontSize: 12, color: '#64748b', marginBottom: 20 }}>Il suivra ton entraînement et programmera tes séances.</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 20 }}>
-              {COACHES.map(c => (
-                <div key={c.id} className={`coach-card ${selectedCoach?.id === c.id ? 'selected' : ''}`} onClick={() => setSelectedCoach(c)}>
-                  <div style={{ fontSize: 40, marginBottom: 10 }}>{c.emoji}</div>
-                  <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 6 }}>{c.name}</div>
-                  <div style={{ fontSize: 11, color: '#64748b', lineHeight: 1.5 }}>{c.desc}</div>
-                  {selectedCoach?.id === c.id && <div style={{ marginTop: 10, fontSize: 11, color: '#e11d48', fontWeight: 600 }}>✓ Sélectionné</div>}
-                </div>
-              ))}
-            </div>
-            <button className="btn-red" onClick={() => { if (!selectedCoach) return setError('Choisis un coach !'); setError(''); setRegStep(2) }} disabled={!selectedCoach}>
-              Continuer →
-            </button>
-            {error && <div style={{ color: '#e11d48', fontSize: 12, marginTop: 8 }}>{error}</div>}
-          </div>
-        )}
-
-        {mode === 'register' && regStep === 2 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <button className="btn-outline" style={{ padding: '6px 12px', fontSize: 11 }} onClick={() => setRegStep(1)}>← Retour</button>
-              <div style={{ fontSize: 12, color: '#64748b' }}>Coach : <b style={{ color: '#e11d48' }}>{selectedCoach?.name}</b></div>
-            </div>
-            <div style={{ fontSize: 10, color: '#64748b', letterSpacing: '0.08em' }}>TON PRÉNOM / NOM</div>
-            <input className="login-input" placeholder="Prénom Nom" value={regForm.name} onChange={e => setRegForm(f => ({ ...f, name: e.target.value }))} />
-            <div style={{ fontSize: 10, color: '#64748b', letterSpacing: '0.08em' }}>EMAIL</div>
-            <input className="login-input" type="email" placeholder="ton@email.com" value={regForm.email} onChange={e => setRegForm(f => ({ ...f, email: e.target.value }))} />
-            <div style={{ fontSize: 10, color: '#64748b', letterSpacing: '0.08em' }}>MOT DE PASSE</div>
-            <input className="login-input" type="password" placeholder="••••••••" value={regForm.password} onChange={e => setRegForm(f => ({ ...f, password: e.target.value }))} />
-            {error && <div style={{ color: '#e11d48', fontSize: 12 }}>{error}</div>}
-            <button className="btn-red" onClick={handleRegister} disabled={loading}>{loading ? 'Création…' : 'Créer mon compte →'}</button>
-          </div>
-        )}
-      </div>
-
-      {/* Coach access - discreet button at bottom */}
-      <div style={{ position: 'fixed', bottom: 16, right: 16 }}>
-        <button onClick={() => { setShowCoachLogin(true); setError('') }}
-          style={{ background: 'none', border: 'none', color: '#1e293b', cursor: 'pointer', fontSize: 10, fontFamily: "'Space Mono'", letterSpacing: '0.05em' }}>
-          ···
-        </button>
-      </div>
     </div>
   )
 }

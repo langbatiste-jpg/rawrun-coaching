@@ -1,106 +1,81 @@
 import { useState, useEffect } from 'react'
 import './index.css'
 import { supabase } from './supabase'
+import { api } from './api'
 import LoginScreen from './components/LoginScreen'
 import CoachApp from './components/CoachApp'
 import AthleteApp from './components/AthleteApp'
+import AnimatedBackground from './components/AnimatedBackground'
 
 export default function App() {
-  const [role, setRole] = useState(null)
+  const [role, setRole] = useState(null)          // null | 'coach' | 'athlete'
   const [currentAthlete, setCurrentAthlete] = useState(null)
+  const [ready, setReady] = useState(false)
   const [toast, setToast] = useState(null)
 
-  // Persist session
   useEffect(() => {
-    const saved = localStorage.getItem('rr_session')
-    if (saved) {
-      try {
-        const s = JSON.parse(saved)
-        if (s.role === 'coach') setRole('coach')
-        else if (s.role === 'athlete' && s.athlete) { setRole('athlete'); setCurrentAthlete(s.athlete) }
-      } catch {}
-    }
+    // 1. Coach : session Supabase Auth
+    supabase.auth.getSession().then(({ data }) => {
+      if (data?.session) setRole('coach')
+      else {
+        // 2. Athlète : profil gardé sur l'appareil
+        try {
+          const s = JSON.parse(localStorage.getItem('rr_session') || 'null')
+          if (s?.role === 'athlete' && s.athlete?.id) { setCurrentAthlete(s.athlete); setRole('athlete') }
+        } catch {}
+      }
+      setReady(true)
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') setRole(r => (r === 'coach' ? null : r))
+      if (event === 'SIGNED_IN' && session) setRole('coach')
+    })
+    return () => sub.subscription.unsubscribe()
   }, [])
 
   const showToast = (msg, type = 'ok') => {
     setToast({ msg, type })
-    setTimeout(() => setToast(null), 2800)
+    clearTimeout(window.__rrToast)
+    window.__rrToast = setTimeout(() => setToast(null), 3000)
   }
 
-  const handleLogin = async (code, registerData = null) => {
-    // Registration flow
-    if (registerData?.isRegister) {
-      // Check if email already exists
-      const { data: existing } = await supabase.from('athlete_accounts').select('id').eq('email', registerData.email).single()
-      if (existing) return false
-
-      // Create athlete profile
-      const { data: newAthlete, error: athleteErr } = await supabase.from('athletes').insert({
-        name: registerData.name,
-        code: registerData.name.toUpperCase().replace(/\s+/g, '').slice(0, 8) + Math.floor(Math.random() * 99),
-        goal: '',
-      }).select().single()
-
-      if (athleteErr || !newAthlete) return false
-
-      // Create account
-      const { error: accountErr } = await supabase.from('athlete_accounts').insert({
-        athlete_id: newAthlete.id,
-        email: registerData.email,
-        password_hash: btoa(registerData.password), // Simple encoding for MVP - use bcrypt in prod
-        coach_id: registerData.coachId,
-      })
-
-      if (accountErr) return false
-
-      setCurrentAthlete(newAthlete)
-      setRole('athlete')
-      localStorage.setItem('rr_session', JSON.stringify({ role: 'athlete', athlete: newAthlete }))
-      return true
-    }
-
-    const clean = code?.trim().toUpperCase()
-
-    // Coach login
-    if (clean === 'RAWRUN') {
-      setRole('coach')
-      localStorage.setItem('rr_session', JSON.stringify({ role: 'coach' }))
-      return true
-    }
-
-    // Try athlete code
-    const { data: byCode } = await supabase.from('athletes').select('*').eq('code', clean).single()
-    if (byCode) {
-      setCurrentAthlete(byCode)
-      setRole('athlete')
-      localStorage.setItem('rr_session', JSON.stringify({ role: 'athlete', athlete: byCode }))
-      return true
-    }
-
-    // Try email/password
-    const { data: account } = await supabase.from('athlete_accounts').select('*, athletes(*)').eq('email', clean).single()
-    if (account) {
-      setCurrentAthlete(account.athletes)
-      setRole('athlete')
-      localStorage.setItem('rr_session', JSON.stringify({ role: 'athlete', athlete: account.athletes }))
-      return true
-    }
-
-    return false
+  // Connexion athlète : vérifiée côté serveur
+  const loginAthlete = async payload => {
+    const { athlete } = await api('athlete-auth', payload)
+    setCurrentAthlete(athlete)
+    setRole('athlete')
+    localStorage.setItem('rr_session', JSON.stringify({ role: 'athlete', athlete }))
   }
 
-  const handleLogout = () => {
+  // Connexion coach : Supabase Auth (email + mot de passe)
+  const loginCoach = async (email, password) => {
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    if (error) throw new Error(error.message.includes('Invalid') ? 'Email ou mot de passe incorrect' : error.message)
+    localStorage.removeItem('rr_session')
+    setRole('coach')
+  }
+
+  const handleLogout = async () => {
+    if (role === 'coach') await supabase.auth.signOut()
     setRole(null)
     setCurrentAthlete(null)
     localStorage.removeItem('rr_session')
   }
 
+  const updateAthlete = a => {
+    setCurrentAthlete(a)
+    localStorage.setItem('rr_session', JSON.stringify({ role: 'athlete', athlete: a }))
+  }
+
   return (
     <>
-      {!role && <LoginScreen onLogin={handleLogin} />}
-      {role === 'coach' && <CoachApp onLogout={handleLogout} showToast={showToast} />}
-      {role === 'athlete' && <AthleteApp athlete={currentAthlete} onLogout={handleLogout} showToast={showToast} />}
-      {toast && <div className={`toast ${toast.type === 'err' ? 'err' : ''}`}>{toast.msg}</div>}
+      <AnimatedBackground calm={!!role} />
+      <div className="rr-app">
+        {ready && !role && <LoginScreen onAthleteLogin={loginAthlete} onCoachLogin={loginCoach} />}
+        {role === 'coach' && <CoachApp onLogout={handleLogout} showToast={showToast} />}
+        {role === 'athlete' && currentAthlete && <AthleteApp athlete={currentAthlete} onAthleteUpdate={updateAthlete} onLogout={handleLogout} showToast={showToast} />}
+      </div>
+      {toast && <div className={`toast ${toast.type === 'err' ? 'err' : ''}`} role="status">{toast.msg}</div>}
     </>
   )
 }

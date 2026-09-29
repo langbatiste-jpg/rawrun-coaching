@@ -1,75 +1,18 @@
-import { BASE_ZONES } from './constants'
 
-export function time5kToSecs(str) {
-  if (!str) return 0
-  const p = str.split(':').map(Number)
-  if (p.length === 2) return p[0] * 60 + p[1]
-  if (p.length === 3) return p[0] * 3600 + p[1] * 60 + p[2]
-  return 0
-}
+import { timeToSecs, secsToPace, parsePace, athleteZones, zonesFromReference, emptyZones, DIST_KM, isoDate, mondayOf } from '../shared/training.js'
+export { secsToPace, parsePace, athleteZones, isoDate, mondayOf }
+export const time5kToSecs = timeToSecs
 
-export function secsToPace(s) {
-  if (!s || s <= 0) return '—'
-  return `${Math.floor(s / 60)}:${Math.round(s % 60).toString().padStart(2, '0')}`
-}
-
-export function parsePace(str) {
-  if (!str || str === '—') return 0
-  const [m, s] = str.split(':').map(Number)
-  return m * 60 + (s || 0)
-}
-
-// Calculate zones from multiple records
-// Uses the best predictor (most reliable distance for the athlete profile)
-export function calculateZonesFromRecords(records) {
-  if (!records || records.length === 0) return BASE_ZONES.map(z => ({ ...z, paceMin: '—', paceMax: '—' }))
-
-  // Priority: 10km > 5km > semi > others
-  const priority = ['10km', '5km', 'Semi-marathon', 'Marathon', '3000m', '1500m', '800m']
-  let bestRecord = null
-  let bestDist = null
-
-  for (const dist of priority) {
-    const r = records.find(r => r.distance === dist)
-    if (r) { bestRecord = r; bestDist = dist; break }
-  }
-
-  if (!bestRecord) bestRecord = records[0]
-
-  // Convert to 5km equivalent pace
-  const distMap = { '800m': 0.8, '1000m': 1, '1500m': 1.5, '1 mile': 1.609, '3000m': 3, '5km': 5, '10km': 10, 'Semi-marathon': 21.097, 'Marathon': 42.195, '50km': 50, '100km': 100 }
-  const km = distMap[bestRecord.distance] || 5
-  const secs = time5kToSecs(bestRecord.time)
-  const pacePerKm = secs / km
-
-  // Normalize to seuil reference
-  const refSeuil = pacePerKm * 1.05
-
-  return BASE_ZONES.map(z => ({
-    ...z,
-    paceMin: secsToPace(Math.round(refSeuil * z.refFactor * 1.03)),
-    paceMax: secsToPace(Math.round(refSeuil * z.refFactor * 0.97)),
-  }))
-}
-
+export function calculateZonesFromRecords(records) { return athleteZones({ records }) }
 export function calculateZones(perf, dist = 5) {
-  const total = time5kToSecs(perf)
-  if (!total) return BASE_ZONES.map(z => ({ ...z, paceMin: '—', paceMax: '—' }))
-  const refPace = total / dist
-  const refSeuil = refPace * 1.05
-  return BASE_ZONES.map(z => ({
-    ...z,
-    paceMin: secsToPace(Math.round(refSeuil * z.refFactor * 1.03)),
-    paceMax: secsToPace(Math.round(refSeuil * z.refFactor * 0.97)),
-  }))
+  const t = timeToSecs(perf)
+  return t ? zonesFromReference(t / dist) : emptyZones()
 }
 
 export function getWeekKey(offset = 0) {
   const d = new Date()
   d.setDate(d.getDate() + offset * 7)
-  const s = new Date(d)
-  s.setDate(d.getDate() - ((d.getDay() + 6) % 7))
-  return s.toISOString().slice(0, 10)
+  return isoDate(mondayOf(d))
 }
 
 export function generateTCX(name, blocks, zones) {
@@ -130,14 +73,14 @@ export function formatTime(ts) {
 }
 
 export function daysUntil(dateStr) {
-  const diff = new Date(dateStr) - new Date()
-  return Math.ceil(diff / (1000 * 60 * 60 * 24))
+  const t = new Date(); t.setHours(0, 0, 0, 0)
+  return Math.round((new Date(dateStr + 'T00:00:00') - t) / 864e5)
 }
 
 export function getStravaAuthUrl(athleteId) {
   const params = new URLSearchParams({
-    client_id: '254589',
-    redirect_uri: 'https://rawrun-coaching.vercel.app',
+    client_id: import.meta.env.VITE_STRAVA_CLIENT_ID || '254589',
+    redirect_uri: window.location.origin,
     response_type: 'code',
     approval_prompt: 'auto',
     scope: 'activity:read_all',
