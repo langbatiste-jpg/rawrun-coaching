@@ -9,6 +9,9 @@
 -- (le même que celui du compte créé dans Authentication → Users).
 create table if not exists coaches (email text primary key);
 insert into coaches (email) values ('langbat57@gmail.com') on conflict do nothing;
+-- ta méthode d'entraînement (modifiable depuis la page « Ma méthode »)
+alter table coaches add column if not exists method text;
+alter table coaches add column if not exists rules jsonb;
 
 create or replace function is_coach() returns boolean
 language sql stable security definer set search_path = public as $$

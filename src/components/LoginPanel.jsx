@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const COACHES = [
   { id: 'batlarun', name: 'Batlarun', emoji: '🏃', desc: "Coureur aguerri — à 3'20 il est en footing" },
@@ -6,8 +6,8 @@ const COACHES = [
   { id: 'batiste', name: 'Batiste', emoji: '💼', desc: 'Partenariats et développement commercial chez RAWRUN' },
 ]
 
-export default function LoginScreen({ onAthleteLogin, onCoachLogin }) {
-  const [mode, setMode] = useState('code') // code | email | register
+export default function LoginPanel({ onAthleteLogin, onCoachLogin, initialMode = 'code', modeSignal }) {
+  const [mode, setMode] = useState(initialMode) // code | email | register
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [code, setCode] = useState('')
@@ -15,6 +15,7 @@ export default function LoginScreen({ onAthleteLogin, onCoachLogin }) {
   const [reg, setReg] = useState({ step: 1, coach: null, name: '', email: '', password: '' })
   const [coachOpen, setCoachOpen] = useState(false)
   const [coachCred, setCoachCred] = useState({ email: '', password: '' })
+  useEffect(() => { if (modeSignal) { setMode(modeSignal.mode); setError('') } }, [modeSignal])
 
   const run = async fn => {
     setLoading(true); setError('')
@@ -30,32 +31,18 @@ export default function LoginScreen({ onAthleteLogin, onCoachLogin }) {
   const submitCoach = () => run(() => onCoachLogin(coachCred.email, coachCred.password))
 
   return (
-    <div className="login-wrap">
+    <>
       <style>{`
-        .login-wrap { min-height: 100vh; min-height: 100dvh; display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 40px; padding: 40px clamp(20px, 5vw, 72px); }
-        .login-hero h1 { font-family: var(--display); font-size: clamp(88px, 15vw, 220px); line-height: .82; letter-spacing: .01em; color: #fff; animation: heroIn 1s var(--ease) both; }
-        .login-hero h1 span { display: block; color: transparent; -webkit-text-stroke: 1.5px var(--accent); }
-        .login-hero p { font-size: 17px; color: var(--text-2); max-width: 30ch; margin-top: 22px; animation: heroIn 1s .15s var(--ease) both; }
-        .login-card { width: 100%; max-width: 420px; justify-self: center; animation: heroIn .9s .25s var(--ease) both; }
+        .login-card { width: 100%; max-width: 440px; margin: 0 auto; }
         .login-card .card { padding: 24px; }
         .coach-pick { display: grid; gap: 8px; }
         .coach-opt { display: flex; gap: 12px; align-items: center; text-align: left; padding: 12px; border-radius: 12px; border: 1px solid var(--border-2); background: rgba(0,0,0,.25); color: var(--text); cursor: pointer; transition: all .15s; }
         .coach-opt:hover { border-color: rgba(255,255,255,.3); }
         .coach-opt.on { border-color: var(--accent); background: var(--accent-glow); }
         .coach-opt .em { font-size: 26px; }
-        .coach-door { position: fixed; right: 14px; bottom: calc(12px + var(--safe-b)); background: none; border: none; color: var(--text-4); cursor: pointer; font-size: 18px; letter-spacing: 2px; padding: 8px; opacity: .5; }
+        .coach-door { position: fixed; right: 14px; bottom: calc(12px + var(--safe-b)); background: none; border: none; color: var(--text-4); cursor: pointer; font-size: 18px; letter-spacing: 2px; padding: 8px; opacity: .5; z-index: 60; }
         .coach-door:hover { opacity: 1; color: var(--text-2); }
-        @keyframes heroIn { from { opacity: 0; transform: translateY(24px); } }
-        @media (max-width: 860px) {
-          .login-wrap { grid-template-columns: 1fr; gap: 28px; padding: calc(40px + env(safe-area-inset-top,0px)) 18px 40px; align-content: start; }
-          .login-hero p { font-size: 15px; margin-top: 14px; }
-        }
       `}</style>
-
-      <div className="login-hero">
-        <h1>RAW<span>RUN</span></h1>
-        <p>Ton plan, tes allures, ton coach. Tout ce qu'il faut pour courir plus vite, au même endroit.</p>
-      </div>
 
       <div className="login-card">
         <div className="card">
@@ -68,7 +55,7 @@ export default function LoginScreen({ onAthleteLogin, onCoachLogin }) {
           {mode === 'code' && (
             <div className="fg" style={{ gap: 12 }}>
               <label className="fg-label" htmlFor="code">Ton code d'accès (envoyé par ton coach)</label>
-              <input id="code" className="input num" style={{ fontSize: 18, letterSpacing: '.12em', textTransform: 'uppercase' }} placeholder="YOANN23" value={code} onChange={e => setCode(e.target.value)} onKeyDown={onEnter(submitCode)} autoFocus autoCapitalize="characters" autoComplete="off" />
+              <input id="code" className="input num" style={{ fontSize: 18, letterSpacing: '.12em', textTransform: 'uppercase' }} placeholder="YOANN23" value={code} onChange={e => setCode(e.target.value)} onKeyDown={onEnter(submitCode)} autoCapitalize="characters" autoComplete="off" />
               {error && <div className="err-msg">{error}</div>}
               <button className="btn-primary" onClick={submitCode} disabled={loading}>{loading ? 'Vérification…' : 'Se connecter'}</button>
             </div>
@@ -129,6 +116,6 @@ export default function LoginScreen({ onAthleteLogin, onCoachLogin }) {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

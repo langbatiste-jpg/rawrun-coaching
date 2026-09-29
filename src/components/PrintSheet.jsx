@@ -1,9 +1,10 @@
 import { createPortal } from 'react-dom'
-import { SESSION_TYPES, BASE_ZONES, blocksToText } from '../../shared/training.js'
+import { BRAND } from '../../shared/brand.js'
+import { SESSION_TYPES, BASE_ZONES, blocksToText, showPace } from '../../shared/training.js'
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']
 
-// Rendu imprimable d'un plan (style RAWRUN). Le navigateur propose « Enregistrer en PDF ».
+// Rendu imprimable d'un plan (style du site). Le navigateur propose « Enregistrer en PDF ».
 export function printPlan(setPrintData, data) {
   setPrintData(data)
   setTimeout(() => { window.print(); setTimeout(() => setPrintData(null), 500) }, 150)
@@ -15,7 +16,7 @@ export default function PrintSheet({ data }) {
   const usedZones = new Set()
   weeks.forEach(w => (w.days || []).forEach(d => (d.blocks || []).forEach(b => { usedZones.add(b.zone); (b.loopBlocks || []).forEach(lb => usedZones.add(lb.zone)) })))
   const z = id => zones?.[id - 1] || BASE_ZONES[id - 1]
-  const fmtBlock = b => `${b.name ? b.name + ' · ' : ''}${b.durationType === 'time' ? `${b.duration} ${b.timeUnit}` : `${b.distance} ${b.distUnit}`} Z${b.zone}${z(b.zone)?.paceMax && z(b.zone).paceMax !== '—' ? ` (${z(b.zone).paceMax}–${z(b.zone).paceMin})` : ''}`
+  const fmtBlock = b => `${b.name ? b.name + ' · ' : ''}${b.durationType === 'time' ? `${b.duration} ${b.timeUnit}` : `${b.distance} ${b.distUnit}`} Z${b.zone}${!showPace(b.zone) ? ' (aux sensations)' : z(b.zone)?.paceMax && z(b.zone).paceMax !== '—' ? ` (${z(b.zone).paceMax}–${z(b.zone).paceMin})` : ''}`
 
   return createPortal(
     <div className="print-only">
@@ -35,12 +36,12 @@ export default function PrintSheet({ data }) {
         .ps .km { text-align: right; font-family: 'Space Mono', monospace; white-space: nowrap; }
       `}</style>
       <div className="ps">
-        <h1>RAW<span>RUN</span> — {title}</h1>
-        <div className="sub">{[athlete, subtitle].filter(Boolean).join(' · ')}</div>
+        <h1>{BRAND.name}<span>{BRAND.accent}</span> {title}</h1>
+        <div className="sub">{[athlete, subtitle, `Plan rédigé par ${BRAND.coach}`].filter(Boolean).join(' · ')}</div>
         {summary && <p style={{ marginBottom: '12pt', color: '#d4d4d8' }}>{summary}</p>}
         {usedZones.size > 0 && (
           <div className="zones">
-            {[...usedZones].sort((a, b) => a - b).map(id => <div key={id}><b style={{ color: z(id).color }}>Z{id}</b> {z(id).short} · {z(id).paceMax}–{z(id).paceMin}/km</div>)}
+            {[...usedZones].filter(id => showPace(id)).sort((a, b) => a - b).map(id => <div key={id}><b style={{ color: z(id).color }}>Z{id}</b> {z(id).short} · {z(id).paceMax}–{z(id).paceMin}/km</div>)}
           </div>
         )}
         {weeks.map(w => (

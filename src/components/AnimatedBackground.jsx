@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-// Fond animé RAWRUN : des lignes de niveau qui ondulent comme une carte de trail,
+// Fond animé : des lignes de niveau qui ondulent comme une carte de trail,
 // et un « coureur » orange qui trace sa route. Se fige si l'utilisateur préfère moins d'animations.
 export default function AnimatedBackground({ calm = false }) {
   const ref = useRef(null)

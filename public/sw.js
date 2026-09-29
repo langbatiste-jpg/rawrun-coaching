@@ -1,5 +1,5 @@
-// Service worker RAWRUN : l'appli s'ouvre même hors connexion (dernière version en cache).
-const CACHE = 'rawrun-v7'
+// Service worker : l'appli s'ouvre même hors connexion (dernière version en cache).
+const CACHE = 'lang-v8'
 const SHELL = ['/', '/index.html', '/manifest.webmanifest', '/favicon.svg', '/icons/icon-192.png', '/icons/icon-512.png']
 
 self.addEventListener('install', e => {

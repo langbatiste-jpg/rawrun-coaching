@@ -3,9 +3,10 @@ import { supabase } from '../supabase'
 import { api } from '../api'
 import { getWeekKey, generateTCX, downloadTCX, daysUntil, getStravaAuthUrl, isoDate } from '../utils'
 import { SESSION_TYPES, DAYS, RPE_LABELS, RPE_COLORS } from '../constants'
-import { athleteZones, calcTotalMinutes } from '../../shared/training.js'
+import { athleteZones, calcTotalMinutes, showPace } from '../../shared/training.js'
 import { Overlay, FG, WeekNav, ZoneBadge } from './ui'
 import Icon from './Icon'
+import Wordmark from './Wordmark'
 import ChatModal from './ChatModal'
 import MonthCalendar from './MonthCalendar'
 import { WellnessCheckIn } from './WellnessCheck'
@@ -79,12 +80,12 @@ export default function AthleteApp({ athlete, onAthleteUpdate, onLogout, showToa
   return (
     <div className="rr-shell">
       <header className="rr-topbar">
-        <div className="rr-nav-logo">RAW<span>RUN</span></div>
+        <Wordmark />
         <div style={{ flex: 1 }} />
         <div className="avatar" style={{ width: 32, height: 32, fontSize: 14, borderRadius: 10 }}>{athlete.name.slice(0, 2).toUpperCase()}</div>
       </header>
       <nav className="rr-nav" aria-label="Navigation">
-        <div className="rr-nav-logo">RAW<span>RUN</span></div>
+        <Wordmark />
         <span className="rr-nav-role">{athlete.name}</span>
         {TABS.map(([v, l, ic]) => <button key={v} className={`rr-nav-btn ${view === v ? 'active' : ''}`} onClick={() => { setView(v); window.scrollTo({ top: 0 }) }}><Icon name={ic} />{l}</button>)}
         <div className="rr-nav-spacer" />
@@ -135,7 +136,7 @@ export default function AthleteApp({ athlete, onAthleteUpdate, onLogout, showToa
               <div className="page-sub" style={{ marginBottom: 20 }}>
                 {athlete.records?.length ? `Calculées à partir de tes records : ${athlete.records.map(r => `${r.distance} en ${r.time}`).join(', ')}` : athlete.perf_5k ? `Calculées sur ton 5 km en ${athlete.perf_5k}` : 'Ton coach doit renseigner un record pour calculer tes allures.'}
               </div>
-              <div style={{ display: 'grid', gap: 6 }}>{zones.map(z => <ZoneBadge key={z.id} zone={z} paceMin={z.paceMin} paceMax={z.paceMax} />)}</div>
+              <div style={{ display: 'grid', gap: 6 }}>{zones.map(z => <ZoneBadge key={z.id} zone={z} paceMin={z.paceMin} paceMax={z.paceMax} easy={!showPace(z.id)} />)}</div>
             </div>
           )}
 
@@ -334,7 +335,8 @@ function BlockRow({ b, zones }) {
         <div style={{ fontWeight: 600, fontSize: 14 }}>{b.name || z?.name}</div>
         <div className="muted" style={{ fontSize: 12.5 }}>{b.durationType === 'time' ? `${b.duration} ${b.timeUnit}` : `${b.distance} ${b.distUnit}`} · Z{b.zone} {z?.short}{b.lapMode === 'lap' ? ' · bouton LAP' : ''}</div>
       </div>
-      {z?.paceMax !== '—' && <div className="num" style={{ color: z?.color, fontSize: 15, textAlign: 'right' }}>{z.paceMax}–{z.paceMin}<div className="muted" style={{ fontSize: 10.5 }}>/km</div></div>}
+      {!showPace(b.zone) ? <div style={{ color: z?.color, fontSize: 13, textAlign: 'right' }}>aux<br />sensations</div>
+        : z?.paceMax !== '—' && <div className="num" style={{ color: z?.color, fontSize: 15, textAlign: 'right' }}>{z.paceMax}–{z.paceMin}<div className="muted" style={{ fontSize: 10.5 }}>/km</div></div>}
     </div>
   )
 }

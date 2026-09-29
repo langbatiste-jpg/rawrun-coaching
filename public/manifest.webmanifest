@@ -1,7 +1,7 @@
 {
-  "name": "RAWRUN Coaching",
-  "short_name": "RAWRUN",
-  "description": "Ton plan, tes allures, ton coach.",
+  "name": "LANG Coaching",
+  "short_name": "LANG",
+  "description": "Coaching running par Batiste Lang.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -7,6 +7,7 @@ import { athleteZones, calcTotalDistance, blocksToText, addWeeks } from '../../s
 import { athleteAlerts, loadRatio, ALERT_COLORS } from '../lib/insights'
 import { Overlay, FG, WeekNav } from './ui'
 import Icon from './Icon'
+import Wordmark from './Wordmark'
 import ChatModal from './ChatModal'
 import MonthCalendar from './MonthCalendar'
 import SessionBuilder from './SessionBuilder'
@@ -15,6 +16,7 @@ import { WellnessChart } from './WellnessCheck'
 import LoadChart from './LoadChart'
 import PlanStudio from './PlanStudio'
 import InstallApp from './InstallApp'
+import MethodPage from './MethodPage'
 import PrintSheet, { printPlan } from './PrintSheet'
 import SessionBar from './SessionBar'
 export { SessionBar }
@@ -23,6 +25,7 @@ const NAV = [
   ['dashboard', 'Vue globale', 'dashboard'],
   ['planning', 'Planning', 'planning'],
   ['plans', 'Plans IA', 'ai'],
+  ['method', 'Ma méthode', 'method'],
   ['athletes', 'Athlètes', 'athletes'],
   ['sessions', 'Séances', 'sessions'],
   ['strength', 'Renforcement', 'strength'],
@@ -150,7 +153,7 @@ export default function CoachApp({ onLogout, showToast }) {
   return (
     <div className="rr-shell">
       <header className="rr-topbar">
-        <div className="rr-nav-logo">RAW<span>RUN</span></div>
+        <Wordmark />
         <div style={{ flex: 1 }} />
         <button className="icon-btn" style={{ position: 'relative' }} aria-label="Notifications" onClick={() => { go('notifications'); markAllRead() }}>
           <Icon name="notifications" />{unread > 0 && <span className="notif-dot" style={{ position: 'absolute', top: 2, right: 2 }} />}
@@ -158,7 +161,7 @@ export default function CoachApp({ onLogout, showToast }) {
       </header>
 
       <nav className="rr-nav" aria-label="Navigation coach">
-        <div className="rr-nav-logo">RAW<span>RUN</span></div>
+        <Wordmark />
         <span className="rr-nav-role">Espace coach</span>
         {NAV.map(([v, l, ic]) => (
           <button key={v} className={`rr-nav-btn ${view === v ? 'active' : ''} ${v === 'plans' ? 'ai' : ''} ${MOBILE_NAV.includes(v) ? '' : 'desk-only'}`}
@@ -182,6 +185,7 @@ export default function CoachApp({ onLogout, showToast }) {
               onEditSlot={s => { setEditSlot(s); setModal('slot') }} />
           )}
           {view === 'plans' && <PlanStudio athletes={athletes} raceGoals={raceGoals} getAthleteZones={getAthleteZones} showToast={showToast} onPublished={() => { loadWeekData(); loadSessions() }} startWith={planFor} key={planFor || 'plans'} />}
+          {view === 'method' && <MethodPage showToast={showToast} />}
           {view === 'goals' && <Goals athletes={athletes} raceGoals={raceGoals} onAdd={() => { setEditGoal(null); setModal('goal') }} onEdit={g => { setEditGoal(g); setModal('goal') }} onDelete={loadRaceGoals} showToast={showToast} />}
           {view === 'notifications' && <Notifications notifications={notifications} athletes={athletes} openChat={openChat} />}
           {view === 'more' && (

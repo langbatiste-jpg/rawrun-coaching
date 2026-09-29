@@ -2,7 +2,7 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  /* RAWRUN — noir, orange, chartreuse */
+  /* Noir, orange, chartreuse */
   --bg: #050506;
   --bg-2: #0c0c0f;
   --bg-3: #131317;

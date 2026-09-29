@@ -5,8 +5,8 @@
 //   { action: 'analyze', athlete_id }                     → bilan de forme + conseils
 import { handler, HttpError, requireCoach } from '../lib/server/core.js'
 import { callClaude, STEPS_SCHEMA, SESSION_SCHEMA } from '../lib/server/ai.js'
-import { athleteZones, stepsToBlocks, calcTotalDistance, normalizeType, addWeeks, blocksToText, SESSION_TYPES } from '../shared/training.js'
-import { DEFAULT_METHOD } from '../shared/method.js'
+import { athleteZones, stepsToBlocks, calcTotalDistance, normalizeType, addWeeks, blocksToText, enforceStructure, SESSION_TYPES } from '../shared/training.js'
+import { DEFAULT_METHOD, DEFAULT_RULES, rulesText } from '../shared/method.js'
 
 export const config = { maxDuration: 300 }
 
@@ -65,16 +65,20 @@ ${stravaTxt || 'aucune'}`
   return { athlete, zones, text }
 }
 
-function systemPrompt(method) {
-  return `Tu es l'assistant de programmation de Batiste, coach de course à pied (RAWRUN Coaching). Tu conçois des entraînements précis, progressifs et individualisés, en français, en tutoyant l'athlète dans les consignes.
+function systemPrompt({ method, rules }) {
+  return `Tu es l'assistant de programmation de Batiste Lang, coach de course à pied. Tu programmes EXACTEMENT comme lui : tu reprends sa méthode, son vocabulaire (EF, EA, AS42, AS21, AS10, RAC, SV1, SV2) et ses formats de séance. Français, tutoiement dans les consignes à l'athlète.
 
-MÉTHODE DU COACH (à respecter strictement) :
-${clip(method || DEFAULT_METHOD, 4000)}
+RÈGLES NON NÉGOCIABLES :
+${rulesText(rules)}
+
+MÉTHODE DU COACH (à respecter strictement, c'est sa façon de travailler) :
+${clip(method || DEFAULT_METHOD, 9000)}
 
 RÈGLES TECHNIQUES :
 - Les intensités s'expriment UNIQUEMENT en zones Smart Pace (1 à 14). Les allures chiffrées sont calculées par l'application.
 - Une séance = une liste d'étapes (step) et de répétitions (repeat). Chaque step a soit duration_s, soit distance_m.
-- Mets l'échauffement et le retour au calme comme des steps séparés.
+- Mets l'échauffement (step nommé « Échauffement EF », zone 2) et le retour au calme (step nommé « Retour au calme », zone 1) comme des steps séparés.
+- La description d'une séance = l'intention du coach pour l'athlète, en 1-2 phrases simples.
 - Pour du fractionné : un repeat contenant l'effort puis la récupération (ex : 6 × [1000 m Z9 + 90 s Z1]).
 - Endurance fondamentale : un seul step (ex : 50 min Z2).
 - Types de séance possibles : ${SESSION_TYPES.filter(t => t.id !== 'REPOS').map(t => `${t.id} (${t.label})`).join(', ')}.`
@@ -155,8 +159,8 @@ const WEEKS_TOOL = {
   },
 }
 
-function toDay(d, zones) {
-  const blocks = stepsToBlocks(d.steps)
+function toDay(d, zones, rules) {
+  const blocks = enforceStructure(stepsToBlocks(d.steps), normalizeType(d.session_type), rules)
   return {
     day_index: Math.min(6, Math.max(0, Number(d.day_index) || 0)),
     session_type: normalizeType(d.session_type),
@@ -165,16 +169,22 @@ function toDay(d, zones) {
   }
 }
 
+async function coachMethod(db, user) {
+  const { data } = await db.from('coaches').select('method,rules').ilike('email', user.email.replace(/[\\%_]/g, m => '\\' + m)).maybeSingle()
+  return { method: data?.method || DEFAULT_METHOD, rules: { ...DEFAULT_RULES, ...(data?.rules || {}) } }
+}
+
 export default handler(async ({ req, body }) => {
-  const { db } = await requireCoach(req)
+  const { db, user } = await requireCoach(req)
   const p = body.params || {}
+  const coach = await coachMethod(db, user)
 
   if (body.action === 'outline') {
     const n = Math.min(40, Math.max(1, Number(p.weeks) || 0))
     if (!n || !p.start_week) throw new HttpError(400, 'Dates du plan manquantes')
     const ctx = await athleteContext(db, p.athlete_id)
     const out = await callClaude({
-      system: systemPrompt(p.method), tool: OUTLINE_TOOL, maxTokens: 6000,
+      system: systemPrompt(coach), tool: OUTLINE_TOOL, maxTokens: 6000,
       prompt: `${ctx.text}\n\n${planBrief({ ...p, weeks: n })}\n\nConstruis la structure du plan sur exactement ${n} semaines (week = 1 à ${n}). Tiens compte de l'historique et de l'état de forme actuel pour le point de départ du volume.`,
     })
     const weeks = Array.from({ length: n }, (_, i) => {
@@ -192,14 +202,14 @@ export default handler(async ({ req, body }) => {
     const outlineTxt = outline.map(w => `S${w.week} (${w.week_key}) — ${w.phase}${w.is_recovery ? ' [allégée]' : ''} — ${w.target_km} km — ${w.focus} — clés : ${(w.key_sessions || []).join(' | ')}`).join('\n')
     const doneTxt = (Array.isArray(body.done) ? body.done : []).slice(-6).map(w => `S${w.week} : ${(w.days || []).filter(d => d.session_type !== 'EF').map(d => `${d.name} [${blocksToText(d.blocks)}]`).join(' ; ')}`).join('\n')
     const out = await callClaude({
-      system: systemPrompt(p.method), tool: WEEKS_TOOL, maxTokens: 14000,
+      system: systemPrompt(coach), tool: WEEKS_TOOL, maxTokens: 14000,
       prompt: `${ctx.text}\n\n${planBrief(p)}\n\nSTRUCTURE VALIDÉE DU PLAN :\n${outlineTxt}\n\n${doneTxt ? `SÉANCES DE QUALITÉ DÉJÀ PROGRAMMÉES (ne pas les répéter à l'identique, faire progresser) :\n${doneTxt}\n\n` : ''}Détaille maintenant les semaines ${from} à ${to} : exactement ${p.sessions_per_week} séances de course par semaine sur les jours disponibles, en respectant le volume cible de chaque semaine.${outline.some(w => w.week >= from && w.week <= to && w.week === outline.length) ? ` La semaine ${outline.length} contient la course : place-la le bon jour avec le type COMP.` : ''}`,
     })
     const weeks = []
     for (let w = from; w <= to; w++) {
       const src = (out.weeks || []).find(x => x.week === w) || out.weeks?.[w - from]
       if (!src?.days?.length) continue // semaine non renvoyée : elle reste « à détailler »
-      const days = (src.days || []).map(d => toDay(d, ctx.zones)).sort((a, b) => a.day_index - b.day_index)
+      const days = (src.days || []).map(d => toDay(d, ctx.zones, coach.rules)).sort((a, b) => a.day_index - b.day_index)
       const uniq = []; for (const d of days) if (!uniq.some(u => u.day_index === d.day_index)) uniq.push(d)
       weeks.push({ week: w, week_key: addWeeks(p.start_week, w - 1), days: uniq })
     }
@@ -211,17 +221,17 @@ export default handler(async ({ req, body }) => {
     if (!text) throw new HttpError(400, 'Décris la séance')
     const ctx = await athleteContext(db, body.athlete_id)
     const out = await callClaude({
-      system: systemPrompt(body.method), tool: { name: 'session', description: 'Une séance structurée', input_schema: SESSION_SCHEMA }, maxTokens: 3000,
+      system: systemPrompt(coach), tool: { name: 'session', description: 'Une séance structurée', input_schema: SESSION_SCHEMA }, maxTokens: 3000,
       prompt: `${body.athlete_id ? ctx.text + '\n\n' : ''}Transforme cette demande du coach en séance structurée :\n« ${text} »`,
     })
-    const d = toDay({ ...out, day_index: 0 }, ctx.zones)
+    const d = toDay({ ...out, day_index: 0 }, ctx.zones, coach.rules)
     return { name: d.name, session_type: d.session_type, description: d.description, blocks: d.blocks, km: d.km }
   }
 
   if (body.action === 'analyze') {
     const ctx = await athleteContext(db, body.athlete_id)
     return callClaude({
-      system: systemPrompt(body.method), maxTokens: 2500,
+      system: systemPrompt(coach), maxTokens: 2500,
       tool: {
         name: 'bilan', description: "Bilan de l'athlète pour le coach",
         input_schema: {

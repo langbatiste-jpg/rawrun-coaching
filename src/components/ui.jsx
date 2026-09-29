@@ -35,7 +35,7 @@ export function WeekNav({ weekKey, offset, setOffset }) {
 }
 
 // ─── Ligne de zone d'allure ───
-export function ZoneBadge({ zone, paceMin, paceMax }) {
+export function ZoneBadge({ zone, paceMin, paceMax, easy = false }) {
   return (
     <div style={{ display: 'flex', gap: 12, alignItems: 'center', padding: '11px 14px', background: 'var(--glass)', border: '1px solid var(--border)', borderRadius: 12, borderLeft: `3px solid ${zone.color}` }}>
       <div className="display" style={{ fontSize: 22, width: 38, color: zone.color }}>Z{zone.id}</div>
@@ -43,7 +43,8 @@ export function ZoneBadge({ zone, paceMin, paceMax }) {
         <div style={{ fontSize: 14, fontWeight: 500 }}>{zone.name}</div>
         <div className="muted" style={{ fontSize: 12 }}>{zone.short}</div>
       </div>
-      <div className="num" style={{ fontSize: 15, color: zone.color }}>{paceMax}–{paceMin}<span className="muted" style={{ fontSize: 11 }}> /km</span></div>
+      {easy ? <div style={{ fontSize: 13, color: zone.color, textAlign: 'right' }}>aux sensations<div className="num muted" style={{ fontSize: 11 }}>≈ {paceMax}–{paceMin}</div></div>
+        : <div className="num" style={{ fontSize: 15, color: zone.color }}>{paceMax}–{paceMin}<span className="muted" style={{ fontSize: 11 }}> /km</span></div>}
     </div>
   )
 }

@@ -104,7 +104,6 @@ function NewPlanModal({ athletes, raceGoals, initialAthleteId, onClose, onCreate
     start_week: nextMonday(), level: 'intermédiaire', sessions_per_week: 4, days: [1, 3, 5, 6], long_run_day: 6,
     current_km: '', peak_km: '', strength: true, constraints: '', method: loadMethod(),
   })
-  const [showMethod, setShowMethod] = useState(false)
   const [busy, setBusy] = useState(false)
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
   const weeks = f.race_date && f.start_week ? weeksBetween(f.start_week, f.race_date) : 0
@@ -191,8 +190,9 @@ function NewPlanModal({ athletes, raceGoals, initialAthleteId, onClose, onCreate
           <FG label="Contraintes, blessures, remarques">
             <textarea className="input" rows={4} value={f.constraints} onChange={e => set('constraints', e.target.value)} placeholder="Ex : sensible du tendon d'Achille, pas de piste le mardi, stage en altitude en novembre…" />
           </FG>
-          <button className="btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }} onClick={() => setShowMethod(s => !s)}>{showMethod ? 'Masquer' : 'Voir / modifier'} ma méthode</button>
-          {showMethod && <textarea className="input" rows={9} style={{ fontSize: 12.5 }} value={f.method} onChange={e => set('method', e.target.value)} />}
+          <div className="panel" style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.55 }}>
+            <b style={{ color: 'var(--lime)' }}>Ta méthode est appliquée</b> : échauffement, retour au calme, EF aux sensations, blocs de charge, séances types… Tu la modifies dans l'onglet <b>Ma méthode</b>.
+          </div>
         </div>
       </div>
       <div className="modal-foot">

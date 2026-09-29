@@ -1,7 +1,8 @@
-# RAWRUN Coaching — mise en ligne de la V7
+# LANG Coaching — mise en ligne de la V8
 
-Cette version ajoute : connexion coach sécurisée, clés secrètes côté serveur, plans IA,
-alertes coach, export PDF, appli installable sur téléphone et nouveau design.
+Cette version ajoute : le nouveau nom (LANG), une page d'accueil animée au défilement, ta méthode
+intégrée à l'IA (page « Ma méthode »), la connexion coach sécurisée, les clés secrètes côté serveur,
+les plans IA, les alertes coach, l'export PDF et l'appli installable sur téléphone.
 
 Compte 20 à 30 minutes, une seule fois. Fais les étapes **dans l'ordre**.
 
@@ -69,8 +70,10 @@ Si Vercel avait déjà déployé avant l'étape 5 : *Deployments* → les trois 
 
 ## Bon à savoir
 
+- **Changer le nom** : tout est dans `shared/brand.js` (une ligne à modifier). Pour une adresse à ton nom, renomme le projet dans Vercel (*Settings → General → Project Name*, ex. `lang-coaching`) puis mets le nouveau domaine dans les réglages de ton appli Strava (*Authorization Callback Domain*).
+- **Ta méthode** : onglet *Ma méthode* dans l'espace coach. Les règles chiffrées (30′ d'échauffement, 10′ de retour au calme, EF sans allure, blocs 3+1) sont appliquées automatiquement à tout ce que l'IA produit ; le texte (philosophie, séances types) est lu par l'IA avant chaque programmation.
+
 - **Coût de l'IA** : de l'ordre de 1 € pour un plan complet de 16 semaines, quelques centimes pour une séance ou un bilan. Le suivi est sur console.anthropic.com.
-- **Ta méthode** : dans *Nouveau plan* → *Voir / modifier ma méthode*. Elle est envoyée à l'IA à chaque demande.
 - **E-mails aux athlètes** : avec l'adresse d'envoi par défaut de Resend (`onboarding@resend.dev`), Resend n'envoie qu'à ton propre email. Pour écrire aux athlètes, ajoute un domaine dans Resend (*Domains*) puis mets `RESEND_FROM = RAWRUN <coach@tondomaine.fr>` sur Vercel.
 - **Rappels automatiques** : chaque jour à 18 h, les athlètes qui ont un e-mail reçoivent leur séance du lendemain.
 - **Tester en local** : `npm run dev` suffit pour l'interface, mais les fonctions serveur (`/api`) ne tournent qu'avec `npx vercel dev`.

@@ -154,3 +154,28 @@ export function weeksBetween(fromWeekKey, toDate) {
   const a = new Date(fromWeekKey + 'T12:00:00'), b = mondayOf(new Date(toDate + 'T12:00:00'))
   return Math.round((b - a) / (7 * 864e5)) + 1
 }
+
+// ── Application automatique de la méthode (échauffement / retour au calme) ──
+import { DEFAULT_RULES, QUALITY_TYPES } from './method.js'
+const mins = b => b.durationType === 'time' ? (b.timeUnit === 'h' ? b.duration * 60 : b.timeUnit === 'sec' ? b.duration / 60 : Number(b.duration)) : 0
+const easyBlock = (name, zone, minutes) => ({ id: newId(), name, zone, durationType: 'time', duration: minutes, timeUnit: 'min', distance: 400, distUnit: 'm', lapMode: 'auto', isLoop: false, loopReps: 1, loopBlocks: [] })
+
+export function enforceStructure(blocks = [], type, rules = DEFAULT_RULES) {
+  if (!QUALITY_TYPES.includes(type) || !blocks.length) return blocks
+  const out = blocks.map(b => ({ ...b }))
+  const wu = rules.warmup_min ?? 30, cd = rules.cooldown_min ?? 10
+  const first = out[0]
+  if (!first.isLoop && first.zone <= 2 && first.durationType === 'time') {
+    if (mins(first) < wu) Object.assign(first, { duration: wu, timeUnit: 'min' })
+    if (!first.name) first.name = 'Échauffement EF'
+  } else out.unshift(easyBlock('Échauffement EF', 2, wu))
+  const last = out[out.length - 1]
+  if (!last.isLoop && last.zone <= 2 && last.durationType === 'time' && /calme|rac|retour|cool/i.test(last.name || '')) {
+    Object.assign(last, { zone: 1, duration: cd, timeUnit: 'min' })
+  } else out.push(easyBlock('Retour au calme', 1, cd))
+  return out
+}
+
+// En EF, on n'affiche pas d'allure : l'athlète court aux sensations
+export const EASY_ZONES = [1, 2]
+export const showPace = (zone, rules = DEFAULT_RULES) => !(rules.ef_no_pace && EASY_ZONES.includes(Number(zone)))

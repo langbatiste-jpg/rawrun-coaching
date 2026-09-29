@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import './index.css'
 import { supabase } from './supabase'
 import { api } from './api'
-import LoginScreen from './components/LoginScreen'
+import Landing from './components/Landing'
 import CoachApp from './components/CoachApp'
 import AthleteApp from './components/AthleteApp'
 import AnimatedBackground from './components/AnimatedBackground'
@@ -32,6 +32,8 @@ export default function App() {
     })
     return () => sub.subscription.unsubscribe()
   }, [])
+
+  useEffect(() => { window.scrollTo(0, 0) }, [role])
 
   const showToast = (msg, type = 'ok') => {
     setToast({ msg, type })
@@ -71,7 +73,7 @@ export default function App() {
     <>
       <AnimatedBackground calm={!!role} />
       <div className="rr-app">
-        {ready && !role && <LoginScreen onAthleteLogin={loginAthlete} onCoachLogin={loginCoach} />}
+        {ready && !role && <Landing onAthleteLogin={loginAthlete} onCoachLogin={loginCoach} />}
         {role === 'coach' && <CoachApp onLogout={handleLogout} showToast={showToast} />}
         {role === 'athlete' && currentAthlete && <AthleteApp athlete={currentAthlete} onAthleteUpdate={updateAthlete} onLogout={handleLogout} showToast={showToast} />}
       </div>

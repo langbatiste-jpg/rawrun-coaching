@@ -49,7 +49,7 @@ export function generateTCX(name, blocks, zones) {
     else if (distMeters) lines.push(`<Duration xsi:type="Distance_t"><Meters>${distMeters}</Meters></Duration>`)
 
     const pm = parsePace(z?.paceMin), px = parsePace(z?.paceMax)
-    if (pm > 0 && px > 0) {
+    if (pm > 0 && px > 0 && ![1, 2].includes(Number(s.zone))) {
       const lo = (1000 / pm).toFixed(3), hi = (1000 / px).toFixed(3)
       lines.push(`<Target xsi:type="Speed_t"><SpeedZone xsi:type="CustomSpeedZone_t"><LowInMetersPerSecond>${lo}</LowInMetersPerSecond><HighInMetersPerSecond>${hi}</HighInMetersPerSecond></SpeedZone></Target>`)
     }

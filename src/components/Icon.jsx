@@ -12,6 +12,7 @@ const P = {
   week: 'M3 12h4l3-8 4 16 3-8h4',
   zones: 'M3 20h18M6 16v4M10 11v9M14 7v13M18 3v17',
   strava: 'M15.4 17.9 13.3 13.8h-3L15.4 24l5.1-10.2h-3M10.4 0 3.5 13.8h4.1l2.8-5.4 2.8 5.4h4.1Z',
+  method: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14ZM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5M8 7h8M8 11h6',
   download: 'M12 3v12m0 0-4-4m4 4 4-4M4 19h16',
 }
 export default function Icon({ name, size = 18 }) {
