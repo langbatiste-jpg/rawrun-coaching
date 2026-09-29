@@ -17,6 +17,7 @@ import LoadChart from './LoadChart'
 import PlanStudio from './PlanStudio'
 import InstallApp from './InstallApp'
 import MethodPage from './MethodPage'
+import ShopAdmin from './ShopAdmin'
 import PrintSheet, { printPlan } from './PrintSheet'
 import SessionBar from './SessionBar'
 export { SessionBar }
@@ -30,6 +31,7 @@ const NAV = [
   ['sessions', 'Séances', 'sessions'],
   ['strength', 'Renforcement', 'strength'],
   ['goals', 'Objectifs', 'goals'],
+  ['shop', 'Boutique', 'shop'],
   ['notifications', 'Notifications', 'notifications'],
 ]
 const MOBILE_NAV = ['dashboard', 'planning', 'plans', 'athletes', 'more']
@@ -186,6 +188,7 @@ export default function CoachApp({ onLogout, showToast }) {
           )}
           {view === 'plans' && <PlanStudio athletes={athletes} raceGoals={raceGoals} getAthleteZones={getAthleteZones} showToast={showToast} onPublished={() => { loadWeekData(); loadSessions() }} startWith={planFor} key={planFor || 'plans'} />}
           {view === 'method' && <MethodPage showToast={showToast} />}
+          {view === 'shop' && <ShopAdmin showToast={showToast} />}
           {view === 'goals' && <Goals athletes={athletes} raceGoals={raceGoals} onAdd={() => { setEditGoal(null); setModal('goal') }} onEdit={g => { setEditGoal(g); setModal('goal') }} onDelete={loadRaceGoals} showToast={showToast} />}
           {view === 'notifications' && <Notifications notifications={notifications} athletes={athletes} openChat={openChat} />}
           {view === 'more' && (

@@ -68,6 +68,21 @@ Si Vercel avait déjà déployé avant l'étape 5 : *Deployments* → les trois 
 
 ---
 
+## 8. Boutique et abonnements (quand tu veux vendre)
+
+1. Supabase → **SQL Editor** → colle `supabase/migration_v9_boutique.sql` → **Run**.
+2. Crée un compte sur **stripe.com** (il te faudra ton statut d'auto-entrepreneur / SIRET pour encaisser en vrai).
+   Reste d'abord en **mode test** : tu peux payer avec la carte `4242 4242 4242 4242`.
+3. Stripe → *Développeurs* → *Clés API* → copie la **clé secrète** → Vercel : `STRIPE_SECRET_KEY`.
+4. Stripe → *Développeurs* → *Webhooks* → *Ajouter un endpoint* :
+   - URL : `https://rawrun-coaching.vercel.app/api/stripe-webhook`
+   - Événements : `checkout.session.completed` et `customer.subscription.deleted`
+   - Copie la **clé de signature** (`whsec_…`) → Vercel : `STRIPE_WEBHOOK_SECRET`. Redéploie.
+5. Dans ton espace coach → **Boutique** : modifie les offres d'exemple (prix, contenu, minutes d'appel), ajoute tes produits avec photo, puis passe-les **« En vente »**. Rien n'apparaît sur le site tant que ce n'est pas en vente.
+6. Pour que tes abonnés puissent résilier seuls : Stripe → *Paramètres* → *Portail client* → active le lien de connexion, et colle-le dans la description de tes offres.
+
+Chaque paiement t'envoie un e-mail et arrive dans *Boutique → Commandes* (adresse de livraison comprise). Stripe prend environ 1,5 % + 0,25 € par paiement en Europe.
+
 ## Bon à savoir
 
 - **Changer le nom** : tout est dans `shared/brand.js` (une ligne à modifier). Pour une adresse à ton nom, renomme le projet dans Vercel (*Settings → General → Project Name*, ex. `lang-coaching`) puis mets le nouveau domaine dans les réglages de ton appli Strava (*Authorization Callback Domain*).

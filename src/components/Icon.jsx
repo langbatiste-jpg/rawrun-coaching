@@ -13,6 +13,7 @@ const P = {
   zones: 'M3 20h18M6 16v4M10 11v9M14 7v13M18 3v17',
   strava: 'M15.4 17.9 13.3 13.8h-3L15.4 24l5.1-10.2h-3M10.4 0 3.5 13.8h4.1l2.8-5.4 2.8 5.4h4.1Z',
   method: 'M4 19.5A2.5 2.5 0 0 1 6.5 17H20V3H6.5A2.5 2.5 0 0 0 4 5.5v14ZM4 19.5A2.5 2.5 0 0 0 6.5 22H20v-5M8 7h8M8 11h6',
+  shop: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4ZM3 6h18M16 10a4 4 0 0 1-8 0',
   download: 'M12 3v12m0 0-4-4m4 4 4-4M4 19h16',
 }
 export default function Icon({ name, size = 18 }) {

@@ -73,7 +73,7 @@ export default function App() {
     <>
       <AnimatedBackground calm={!!role} />
       <div className="rr-app">
-        {ready && !role && <Landing onAthleteLogin={loginAthlete} onCoachLogin={loginCoach} />}
+        {ready && !role && <Landing onAthleteLogin={loginAthlete} onCoachLogin={loginCoach} showToast={showToast} />}
         {role === 'coach' && <CoachApp onLogout={handleLogout} showToast={showToast} />}
         {role === 'athlete' && currentAthlete && <AthleteApp athlete={currentAthlete} onAthleteUpdate={updateAthlete} onLogout={handleLogout} showToast={showToast} />}
       </div>

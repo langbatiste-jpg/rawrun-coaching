@@ -143,3 +143,7 @@
   .l-hero-after, .l-scroll-hint { display: none; }
   .reveal { opacity: 1; transform: none; }
 }
+
+/* Offres & boutique */
+.l-shop { padding: clamp(40px, 10vh, 110px) 0 0; }
+.l-shop:not(:has(.shop-offers, .boutique)) { display: none; }

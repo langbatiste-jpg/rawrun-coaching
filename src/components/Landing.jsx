@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import LoginPanel from './LoginPanel'
+import { CoachingOffers, Boutique, OrderBanner } from './Shop'
 import Wordmark from './Wordmark'
 import { BRAND } from '../../shared/brand.js'
 import { athleteZones, secsToPace, timeToSecs } from '../../shared/training.js'
@@ -49,7 +50,7 @@ const SESSION = [
   { w: 10, h: 18, c: '#71717a', label: 'cool' },
 ]
 
-export default function Landing({ onAthleteLogin, onCoachLogin }) {
+export default function Landing({ onAthleteLogin, onCoachLogin, showToast }) {
   const root = useRef(null)
   const steps = useScrollScenes(root)
   useEffect(() => {
@@ -70,12 +71,15 @@ export default function Landing({ onAthleteLogin, onCoachLogin }) {
 
   return (
     <div className="landing" ref={root}>
+      <OrderBanner />
       <header className="l-top">
         <Wordmark className="l-logo" />
         <nav className="l-top-links">
           <a href="#methode">La méthode</a>
           <a href="#zones">Tes allures</a>
           <a href="#appli">L'appli</a>
+          <a href="#offres">Tarifs</a>
+          <a href="#boutique">Boutique</a>
         </nav>
         <button className="btn-primary btn-sm" onClick={() => goLogin('code')}>Se connecter</button>
       </header>
@@ -230,7 +234,19 @@ export default function Landing({ onAthleteLogin, onCoachLogin }) {
         </div>
       </section>
 
-      {/* 7 · CONNEXION */}
+      {/* 7 · OFFRES & BOUTIQUE (s'affichent seulement si quelque chose est en vente) */}
+      <section id="offres" className="l-shop">
+        <div className="l-wrap">
+          <CoachingOffers showToast={showToast} header={<><p className="l-kicker">Coaching</p><h2 className="l-h2">Choisis ton suivi.</h2><p className="l-body" style={{ marginBottom: 32 }}>Un plan seul, ou un coach à tes côtés chaque semaine. Ajoute les options qui te servent.</p></>} />
+        </div>
+      </section>
+      <section id="boutique" className="l-shop">
+        <div className="l-wrap">
+          <Boutique showToast={showToast} header={<><p className="l-kicker">Boutique</p><h2 className="l-h2">Ce que j'utilise.</h2><p className="l-body" style={{ marginBottom: 28 }}>Gels, accessoires, récup : le matériel testé à l'entraînement et en course.</p></>} />
+        </div>
+      </section>
+
+      {/* 8 · CONNEXION */}
       <section id="connexion" className="l-login">
         <div className="l-wrap">
           <h2 className="l-h2" style={{ textAlign: 'center' }}>On y va ?</h2>

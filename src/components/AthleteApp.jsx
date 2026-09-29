@@ -13,6 +13,7 @@ import { WellnessCheckIn } from './WellnessCheck'
 import { StrengthSessionView } from './StrengthBuilder'
 import SessionBar from './SessionBar'
 import InstallApp from './InstallApp'
+import { Boutique, CoachingOffers } from './Shop'
 
 const TABS = [['week', 'Semaine', 'week'], ['month', 'Calendrier', 'planning'], ['zones', 'Allures', 'zones'], ['goals', 'Objectifs', 'goals'], ['more', 'Plus', 'athletes']]
 const stType = id => SESSION_TYPES.find(t => t.id === id)
@@ -171,7 +172,9 @@ export default function AthleteApp({ athlete, onAthleteUpdate, onLogout, showToa
               <InstallApp />
               <StravaCard athlete={athlete} activities={strava} showToast={showToast} onSynced={loadStrava} />
               <div className="card"><div className="muted" style={{ fontSize: 13 }}>Ton code d'accès</div><div className="num" style={{ fontSize: 22, letterSpacing: '.1em' }}>{athlete.code}</div></div>
-              <button className="btn-danger" onClick={onLogout} style={{ justifySelf: 'start' }}>Se déconnecter</button>
+              <Boutique showToast={showToast} header={<div className="display" style={{ fontSize: 34, margin: '14px 0 12px' }}>Boutique</div>} />
+              <CoachingOffers showToast={showToast} header={<div className="display" style={{ fontSize: 34, margin: '14px 0 12px' }}>Options de coaching</div>} />
+              <button className="btn-danger" onClick={onLogout} style={{ justifySelf: 'start', marginTop: 12 }}>Se déconnecter</button>
             </div>
           )}
         </div>
