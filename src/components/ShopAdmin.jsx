@@ -140,7 +140,7 @@ function EditModal({ table, row, onClose, onSaved, showToast, skus = [] }) {
     name: row?.name || '', description: row?.description || '', price: fromCents(row?.price_cents || 0),
     interval: row?.interval || 'month', features: (row?.features || []).join('\n'), calls_per_week: row?.calls_per_week || 0,
     highlight: !!row?.highlight, active: row ? !!row.active : true, sort: row?.sort || 0,
-    category: row?.category || 'Nutrition', image_url: row?.image_url || '', stock: row?.stock ?? '', sku: row?.sku || '', cost: fromCents(row?.cost_cents || 0),
+    category: row?.category || 'Nutrition', image_url: row?.image_url || '', stock: row?.stock ?? '', sku: row?.sku || '', cost: fromCents(row?.cost_cents || 0), barcode: row?.barcode || '',
   })
   const [busy, setBusy] = useState(false)
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
@@ -161,6 +161,7 @@ function EditModal({ table, row, onClose, onSaved, showToast, skus = [] }) {
     if (!isProduct) data.interval = f.interval
     if (isOffer) Object.assign(data, { features: f.features.split('\n').map(s => s.trim()).filter(Boolean), calls_per_week: Number(f.calls_per_week) || 0, highlight: f.highlight })
     if (isProduct) Object.assign(data, { category: f.category, image_url: f.image_url || null, stock: f.stock === '' ? null : Number(f.stock), sku: f.sku.trim().toUpperCase() || suggestSku(f.name, f.category, skus), cost_cents: toCents(f.cost) })
+    if (isProduct && f.barcode.trim() !== (row?.barcode || '')) data.barcode = f.barcode.trim() || null // colonne ajoutée en v12
     setBusy(true)
     const { error } = row ? await supabase.from(table).update(data).eq('id', row.id) : await supabase.from(table).insert(data)
     setBusy(false)
@@ -190,6 +191,7 @@ function EditModal({ table, row, onClose, onSaved, showToast, skus = [] }) {
             <FG label="Code article"><div style={{ display: 'flex', gap: 6 }}><input className="input num" value={f.sku} onChange={e => set('sku', e.target.value.toUpperCase())} placeholder="auto" /><button className="btn-ghost btn-sm" type="button" onClick={() => set('sku', suggestSku(f.name, f.category, skus))}>Générer</button></div></FG>
             <FG label="Prix d'achat unitaire (€)"><input className="input num" inputMode="decimal" value={f.cost} onChange={e => set('cost', e.target.value)} /></FG>
           </div>
+          <FG label="Code-barres fabricant (EAN, facultatif)"><input className="input num" value={f.barcode} onChange={e => set('barcode', e.target.value)} placeholder="Scanne le code imprimé sur l'emballage" /></FG>
           {toCents(f.price) > 0 && toCents(f.cost) > 0 && <div className="muted" style={{ fontSize: 13 }}>Marge : {euros(toCents(f.price) - toCents(f.cost))} par article ({Math.round((toCents(f.price) - toCents(f.cost)) / toCents(f.price) * 100)} %)</div>}
           <FG label="Catégorie"><input className="input" list="cats" value={f.category} onChange={e => set('category', e.target.value)} /><datalist id="cats"><option>Nutrition</option><option>Accessoires</option><option>Textile</option><option>Récupération</option></datalist></FG>
           <FG label="Photo">

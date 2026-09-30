@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import Receptions from './Receptions'
 import { supabase } from '../supabase'
 import { Overlay, FG } from './ui'
 import * as C from '../lib/compta'
@@ -51,7 +52,7 @@ export default function ComptaPage({ showToast }) {
   const diff = useMemo(() => C.differentialStatement(d, period.from, period.to), [d, period])
   const bs = useMemo(() => C.balanceSheet(d, period.to), [d, period])
 
-  const TABS = [['dash', 'Tableau de bord'], ['journal', 'Journal'], ['stock', 'Stock & inventaire'], ['clients', 'Clients'], ['result', 'Compte de résultat'], ['diff', 'Différentiel'], ['bilan', 'Bilan'], ['settings', 'Réglages']]
+  const TABS = [['dash', 'Tableau de bord'], ['journal', 'Journal'], ['stock', 'Stock & inventaire'], ['recep', 'Réceptions'], ['clients', 'Clients'], ['result', 'Compte de résultat'], ['diff', 'Différentiel'], ['bilan', 'Bilan'], ['settings', 'Réglages']]
 
   return (
     <div className="view-enter compta">
@@ -66,7 +67,7 @@ export default function ComptaPage({ showToast }) {
 
       <div className="compta-bar">
         <div className="tab-bar compta-tabs">{TABS.map(([k, l]) => <button key={k} className={`tab-btn ${tab === k ? 'active' : ''}`} onClick={() => setTab(k)}>{l}</button>)}</div>
-        {!['stock', 'clients', 'settings'].includes(tab) && (
+        {!['stock', 'recep', 'clients', 'settings'].includes(tab) && (
           <div className="compta-period">
             <select className="input" value={period.key} onChange={e => setPeriodKey(e.target.value)} aria-label="Période">
               <option value="month">Ce mois-ci</option><option value="year">Cette année</option><option value="last">Année dernière</option><option value="all">Depuis le début</option><option value="custom">Personnalisée…</option>
@@ -82,7 +83,8 @@ export default function ComptaPage({ showToast }) {
       {!ready ? <div className="muted">Chargement…</div> : <>
         {tab === 'dash' && <Dashboard d={d} is={is} diff={diff} bs={bs} period={period} onAdd={s => setModal({ type: 'suggest', s })} />}
         {tab === 'journal' && <Journal d={d} period={period} onEdit={e => setModal({ type: 'entry', entry: e, kind: e.kind })} onRecurring={r => setModal({ type: 'recurring', r })} reload={load} showToast={showToast} />}
-        {tab === 'stock' && <Stock d={d} reload={load} showToast={showToast} openModal={setModal} />}
+        {tab === 'stock' && <Stock d={d} reload={load} showToast={showToast} openModal={setModal} goReceptions={() => setTab('recep')} />}
+        {tab === 'recep' && <Receptions products={d.products} reload={load} showToast={showToast} />}
         {tab === 'clients' && <Clients d={d} />}
         {tab === 'result' && <IncomeStatement is={is} period={period} />}
         {tab === 'diff' && <Differential diff={diff} period={period} />}
@@ -347,7 +349,7 @@ function RecurringModal({ r, onClose, onSaved, showToast }) {
 }
 
 // ─────────── STOCK & INVENTAIRE ───────────
-function Stock({ d, reload, showToast, openModal }) {
+function Stock({ d, reload, showToast, openModal, goReceptions }) {
   const [inv, setInv] = useState(null) // { [productId]: quantité comptée }
   const [busy, setBusy] = useState(false)
   const products = d.products
@@ -392,7 +394,8 @@ function Stock({ d, reload, showToast, openModal }) {
 
       <div className="compta-bar" style={{ marginBottom: 10 }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <button className="btn-primary btn-sm" onClick={() => openModal({ type: 'stock', mode: 'achat' })}>+ Réception de marchandises</button>
+          <button className="btn-primary btn-sm" onClick={goReceptions}>📦 Réception d'un colis</button>
+          <button className="btn-ghost btn-sm" onClick={() => openModal({ type: 'stock', mode: 'achat' })}>Entrée rapide</button>
           <button className="btn-ghost btn-sm" onClick={() => openModal({ type: 'stock', mode: 'initial' })}>Stock de départ</button>
           <button className="btn-ghost btn-sm" onClick={() => openModal({ type: 'stock', mode: 'perte' })}>Perte / casse</button>
         </div>
@@ -692,4 +695,22 @@ const CSS = `
 .fs-result.pos { background: var(--lime-glow); color: var(--lime); }
 .fs-result.neg { background: rgba(255,59,92,.12); color: var(--danger); }
 @media (max-width: 960px) { .compta-grid, .fs-wrap { grid-template-columns: 1fr; } }
+.po-row { display: grid; grid-template-columns: 1fr 80px 110px 36px; gap: 8px; align-items: center; }
+.scan-card { border-color: var(--accent-glow); }
+.scan-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.scan-input { flex: 1; min-width: 220px; font-size: 16px; padding: 14px 16px; }
+.scan-last { margin-top: 12px; font-weight: 600; font-size: 15px; }
+.scan-video { position: relative; margin-top: 12px; border-radius: 14px; overflow: hidden; background: #000; max-width: 520px; aspect-ratio: 4 / 3; }
+.scan-video video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scan-frame { position: absolute; left: 12%; right: 12%; top: 32%; bottom: 32%; border: 2px solid var(--accent); border-radius: 10px; box-shadow: 0 0 0 999px rgba(0,0,0,.35); }
+.scan-hint { position: absolute; bottom: 10px; left: 0; right: 0; text-align: center; font-size: 12.5px; color: #fff; }
+.qty-input { width: 52px; text-align: center; background: rgba(0,0,0,.3); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 6px 4px; font-size: 14px; }
+.row-ok td { background: rgba(200,255,0,.03); }
+.check-list { list-style: none; padding: 0; margin: 12px 0; display: grid; gap: 8px; font-size: 13.5px; }
+.check-list li { padding-left: 24px; position: relative; color: var(--gold); }
+.check-list li::before { content: '!'; position: absolute; left: 0; top: 0; width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid currentColor; font-size: 11px; font-weight: 700; display: grid; place-items: center; }
+.check-list li.ok { color: var(--lime); }
+.check-list li.ok::before { content: '✓'; }
+.new-product { background: rgba(0,0,0,.25); }
+@media (max-width: 560px) { .po-row { grid-template-columns: 1fr 64px 84px 32px; } }
 `

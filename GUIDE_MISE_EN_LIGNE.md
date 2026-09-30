@@ -101,6 +101,18 @@ Onglet **Compta** de l'espace coach :
 - **Clients**, **Compte de résultat**, **Différentiel** (marge sur coût variable, seuil de rentabilité, point mort), **Bilan**.
 - Les ventes Stripe, leurs frais estimés et les sorties de stock arrivent tout seuls. Pour les renouvellements d'abonnement, ajoute l'événement `invoice.paid` à ton webhook Stripe.
 
+## 10. Réceptions de colis (contrôle du stock)
+
+Lance `supabase/migration_v12_receptions.sql` dans Supabase (SQL Editor → Run), après la v11.
+
+Onglet **Compta → Réceptions** :
+1. **Bon de commande** : quand tu commandes chez un fournisseur, tu listes les articles, quantités et prix d'achat. Un article que tu n'as jamais vendu ? « + Nouvel article » crée sa fiche (nom, prix, code article LANG automatique, code-barres fabricant). Elle reste cachée sur le site tant que tu ne l'actives pas dans Boutique (avec une photo).
+2. **Le colis arrive** : tu ouvres le bon et tu scannes chaque article (douchette USB/Bluetooth, ou caméra du téléphone). Bip = compté. Un code inconnu ? Tu dis à quel article il correspond (ou tu crées la fiche), il sera reconnu les fois suivantes.
+3. **La facture** : tu saisis son total et les frais de port ; l'écran te dit si elle est conforme ou combien il y a d'écart.
+4. **Valider** : c'est seulement là que le stock du site augmente (coût moyen recalculé) et que l'achat entre en compta. Les manquants peuvent rester en attente dans un bon « reliquat ».
+
+Pas de code-barres sur l'emballage ? Le bouton 🏷 imprime des étiquettes avec ton code article (planche A4, 3 par ligne).
+
 ## Bon à savoir
 
 - **Changer le nom** : tout est dans `shared/brand.js` (une ligne à modifier). Pour une adresse à ton nom, renomme le projet dans Vercel (*Settings → General → Project Name*, ex. `lang-coaching`) puis mets le nouveau domaine dans les réglages de ton appli Strava (*Authorization Callback Domain*).
