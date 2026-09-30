@@ -118,7 +118,7 @@ export function Boutique({ showToast, header = null }) {
             <div key={p.id} className="product">
               <div className="product-img">{p.image_url ? <img src={p.image_url} alt={p.name} loading="lazy" /> : <span>{/gel|nutri|boisson|barre/i.test(`${p.category} ${p.name}`) ? '⚡' : /text|chauss|tee|maillot/i.test(`${p.category} ${p.name}`) ? '👕' : '🏃'}</span>}</div>
               <div className="product-body">
-                <div className="muted" style={{ fontSize: 12 }}>{p.category}</div>
+                <div className="muted" style={{ fontSize: 12 }}>{p.category}{p.sku ? <span className="num"> · Réf. {p.sku}</span> : null}</div>
                 <div className="product-name">{p.name}</div>
                 {p.description && <div className="product-desc">{p.description}</div>}
                 <div className="product-foot">

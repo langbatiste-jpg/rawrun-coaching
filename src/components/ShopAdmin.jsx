@@ -3,6 +3,7 @@ import { supabase } from '../supabase'
 import { Overlay, FG } from './ui'
 import { api } from '../api'
 import { euros } from './Shop'
+import { suggestSku } from '../lib/compta'
 import DeliverySlips, { printSlips } from './DeliverySlips'
 
 const toCents = v => Math.round(Number(String(v).replace(',', '.')) * 100) || 0
@@ -82,7 +83,7 @@ export default function ShopAdmin({ showToast }) {
                 <div style={{ flex: 1, minWidth: 180 }}>
                   <div style={{ fontWeight: 600 }}>{r.name} {r.highlight && <span className="pill" style={{ background: 'var(--accent-glow)', color: 'var(--accent)' }}>mise en avant</span>}</div>
                   <div className="muted" style={{ fontSize: 13 }}>
-                    {euros(r.price_cents)}{r.interval === 'month' ? ' / mois' : r.interval === 'once' ? ' une fois' : ''}
+                    {r.sku ? `${r.sku} · ` : ''}{euros(r.price_cents)}{r.interval === 'month' ? ' / mois' : r.interval === 'once' ? ' une fois' : ''}
                     {r.calls_per_week ? ` · ${r.calls_per_week} min d'appel/sem.` : ''}{table === 'products' ? ` · ${r.category || '—'} · stock ${r.stock ?? 'illimité'}` : ''}
                   </div>
                 </div>
@@ -128,18 +129,18 @@ export default function ShopAdmin({ showToast }) {
 
       <DeliverySlips orders={slips} />
       {shipping && <ShipModal order={shipping} onClose={() => setShipping(null)} onDone={async tracking => { await setStatus(shipping, 'shipped', { shipped_at: new Date().toISOString(), tracking: tracking || null }); try { await api('notify-shipped', { order_id: shipping.id }, { coach: true }) } catch {} setShipping(null); showToast('Commande expédiée, le client est prévenu ✓') }} />}
-      {edit && <EditModal {...edit} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} showToast={showToast} />}
+      {edit && <EditModal {...edit} skus={products.map(p => p.sku).filter(s => s && s !== edit.row?.sku)} onClose={() => setEdit(null)} onSaved={() => { setEdit(null); load() }} showToast={showToast} />}
     </div>
   )
 }
 
-function EditModal({ table, row, onClose, onSaved, showToast }) {
+function EditModal({ table, row, onClose, onSaved, showToast, skus = [] }) {
   const isProduct = table === 'products', isOffer = table === 'offers'
   const [f, setF] = useState({
     name: row?.name || '', description: row?.description || '', price: fromCents(row?.price_cents || 0),
     interval: row?.interval || 'month', features: (row?.features || []).join('\n'), calls_per_week: row?.calls_per_week || 0,
     highlight: !!row?.highlight, active: row ? !!row.active : true, sort: row?.sort || 0,
-    category: row?.category || 'Nutrition', image_url: row?.image_url || '', stock: row?.stock ?? '',
+    category: row?.category || 'Nutrition', image_url: row?.image_url || '', stock: row?.stock ?? '', sku: row?.sku || '', cost: fromCents(row?.cost_cents || 0),
   })
   const [busy, setBusy] = useState(false)
   const set = (k, v) => setF(x => ({ ...x, [k]: v }))
@@ -159,7 +160,7 @@ function EditModal({ table, row, onClose, onSaved, showToast }) {
     const data = { name: f.name.trim(), description: f.description, price_cents: toCents(f.price), active: f.active, sort: Number(f.sort) || 0 }
     if (!isProduct) data.interval = f.interval
     if (isOffer) Object.assign(data, { features: f.features.split('\n').map(s => s.trim()).filter(Boolean), calls_per_week: Number(f.calls_per_week) || 0, highlight: f.highlight })
-    if (isProduct) Object.assign(data, { category: f.category, image_url: f.image_url || null, stock: f.stock === '' ? null : Number(f.stock) })
+    if (isProduct) Object.assign(data, { category: f.category, image_url: f.image_url || null, stock: f.stock === '' ? null : Number(f.stock), sku: f.sku.trim().toUpperCase() || suggestSku(f.name, f.category, skus), cost_cents: toCents(f.cost) })
     setBusy(true)
     const { error } = row ? await supabase.from(table).update(data).eq('id', row.id) : await supabase.from(table).insert(data)
     setBusy(false)
@@ -185,6 +186,11 @@ function EditModal({ table, row, onClose, onSaved, showToast }) {
           <label className="check"><input type="checkbox" checked={f.highlight} onChange={e => set('highlight', e.target.checked)} /> Mettre en avant (« Le plus choisi »)</label>
         </>}
         {isProduct && <>
+          <div className="grid-2">
+            <FG label="Code article"><div style={{ display: 'flex', gap: 6 }}><input className="input num" value={f.sku} onChange={e => set('sku', e.target.value.toUpperCase())} placeholder="auto" /><button className="btn-ghost btn-sm" type="button" onClick={() => set('sku', suggestSku(f.name, f.category, skus))}>Générer</button></div></FG>
+            <FG label="Prix d'achat unitaire (€)"><input className="input num" inputMode="decimal" value={f.cost} onChange={e => set('cost', e.target.value)} /></FG>
+          </div>
+          {toCents(f.price) > 0 && toCents(f.cost) > 0 && <div className="muted" style={{ fontSize: 13 }}>Marge : {euros(toCents(f.price) - toCents(f.cost))} par article ({Math.round((toCents(f.price) - toCents(f.cost)) / toCents(f.price) * 100)} %)</div>}
           <FG label="Catégorie"><input className="input" list="cats" value={f.category} onChange={e => set('category', e.target.value)} /><datalist id="cats"><option>Nutrition</option><option>Accessoires</option><option>Textile</option><option>Récupération</option></datalist></FG>
           <FG label="Photo">
             <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>

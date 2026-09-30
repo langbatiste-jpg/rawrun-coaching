@@ -85,8 +85,8 @@ export default async function webhook(req, res) {
       const no = await orderNo(db)
 
       if (kind === 'shop') {
-        const { data: products } = await db.from('products').select('id,name,price_cents,stock').in('id', ids.map(i => i[0]))
-        items = ids.map(([id, qty]) => { const p = products?.find(x => x.id === id); return { id, qty, name: p?.name || '?', price_cents: p?.price_cents } })
+        const { data: products } = await db.from('products').select('id,name,price_cents,stock,sku,cost_cents').in('id', ids.map(i => i[0]))
+        items = ids.map(([id, qty]) => { const p = products?.find(x => x.id === id); return { id, qty, name: p?.name || '?', price_cents: p?.price_cents, sku: p?.sku || null, cost_cents: p?.cost_cents || 0 } })
         for (const it of items) {
           const p = products?.find(x => x.id === it.id)
           if (p && p.stock !== null) await db.from('products').update({ stock: Math.max(0, p.stock - it.qty) }).eq('id', p.id)
@@ -102,12 +102,18 @@ export default async function webhook(req, res) {
         await db.from('athletes').update({ subscription_status: obj.mode === 'subscription' ? 'active' : null, goal: offer?.name || '' }).eq('id', athlete.id)
       }
 
-      await db.from('orders').insert({
+      const { data: savedOrder } = await db.from('orders').insert({
         stripe_session_id: obj.id, order_no: no, kind, status: obj.mode === 'subscription' ? 'active' : 'paid',
         email: cd.email, name: cd.name, phone: cd.phone, items, amount_cents: obj.amount_total,
         shipping: shipping ? { ...shipping, method: shippingChoice } : null,
         stripe_subscription_id: obj.subscription || null, athlete_id: athlete?.id || null, access_code: athlete?.code || null,
-      })
+      }).select('id').single()
+
+      // Compta : sortie de stock au coût d'achat (pour le coût des marchandises vendues)
+      if (kind === 'shop') {
+        const moves = items.filter(i => i.id && i.name !== '?').map(i => ({ product_id: i.id, qty: -i.qty, type: 'vente', unit_cost_cents: i.cost_cents || 0, order_id: savedOrder?.id || null, note: no }))
+        if (moves.length) { const { error } = await db.from('stock_movements').insert(moves); if (error) console.warn('stock_movements', error.message) }
+      }
 
       const list = items.map(i => `• ${escapeHtml(i.name)}${i.qty ? ` × ${i.qty}` : ''}`).join('\n')
 
@@ -151,6 +157,14 @@ export default async function webhook(req, res) {
           }),
         })
       }
+    }
+
+    // Renouvellement mensuel d'un abonnement → recette dans la compta
+    if (event.type === 'invoice.paid' && obj.billing_reason === 'subscription_cycle' && obj.amount_paid > 0) {
+      const { data: order } = await db.from('orders').select('id,name,email,items').eq('stripe_subscription_id', obj.subscription || '').maybeSingle()
+      const label = `Abonnement ${(order?.items || [])[0]?.name || ''} · ${order?.name || obj.customer_email || ''}`.trim()
+      const { data: dup } = await db.from('compta_entries').select('id').eq('note', obj.id).maybeSingle()
+      if (!dup) await db.from('compta_entries').insert({ date: new Date((obj.status_transitions?.paid_at || obj.created) * 1000).toISOString().slice(0, 10), kind: 'recette', category: 'Prestations de coaching', label, amount_cents: obj.amount_paid, supplier: order?.name || obj.customer_email, payment: 'Stripe', order_id: order?.id || null, note: obj.id })
     }
 
     if (event.type === 'customer.subscription.deleted') {

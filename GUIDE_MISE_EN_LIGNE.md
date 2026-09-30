@@ -91,6 +91,16 @@ Si Vercel avait déjà déployé avant l'étape 5 : *Deployments* → les trois 
 
 Chaque paiement t'envoie un e-mail et arrive dans *Boutique → Commandes* (adresse de livraison comprise). Stripe prend environ 1,5 % + 0,25 € par paiement en Europe.
 
+## 9. Compta
+
+Lance `supabase/migration_v11_compta.sql` dans Supabase (SQL Editor → Run). Ton abonnement Claude (18 €/mois depuis septembre 2026) et le crédit IA de 5 € y sont déjà enregistrés.
+
+Onglet **Compta** de l'espace coach :
+- **Journal** : recettes, dépenses, apports ; dépenses récurrentes ; export du *livre des recettes* et du *registre des achats* (obligatoires en micro-entreprise).
+- **Stock & inventaire** : codes articles (affichés sur le site et les bons de livraison), réception de marchandises (met à jour le stock ET la compta), pertes, inventaire avec écarts.
+- **Clients**, **Compte de résultat**, **Différentiel** (marge sur coût variable, seuil de rentabilité, point mort), **Bilan**.
+- Les ventes Stripe, leurs frais estimés et les sorties de stock arrivent tout seuls. Pour les renouvellements d'abonnement, ajoute l'événement `invoice.paid` à ton webhook Stripe.
+
 ## Bon à savoir
 
 - **Changer le nom** : tout est dans `shared/brand.js` (une ligne à modifier). Pour une adresse à ton nom, renomme le projet dans Vercel (*Settings → General → Project Name*, ex. `lang-coaching`) puis mets le nouveau domaine dans les réglages de ton appli Strava (*Authorization Callback Domain*).

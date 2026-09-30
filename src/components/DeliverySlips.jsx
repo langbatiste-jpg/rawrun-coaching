@@ -73,7 +73,7 @@ export default function DeliverySlips({ orders }) {
               <thead><tr><th style={{ width: 24 }}>✓</th><th>Article</th><th style={{ textAlign: 'center' }}>Qté</th><th style={{ textAlign: 'right' }}>Prix unit.</th></tr></thead>
               <tbody>
                 {(o.items || []).map((i, k) => (
-                  <tr key={k}><td><span className="chk" /></td><td>{i.name}</td><td className="qty">{i.qty || 1}</td><td style={{ textAlign: 'right' }}>{euros(i.price_cents)}</td></tr>
+                  <tr key={k}><td><span className="chk" /></td><td>{i.name}{i.sku && <div style={{ fontSize: '8.5pt', color: '#555', fontFamily: 'Space Mono, monospace' }}>Réf. {i.sku}</div>}</td><td className="qty">{i.qty || 1}</td><td style={{ textAlign: 'right' }}>{euros(i.price_cents)}</td></tr>
                 ))}
               </tbody>
             </table>
